@@ -1,2 +1,2 @@
-# MineAtlas_currencies
-A single-file, real-time currency and cryptocurrency converter supporting 1,200+ fiat currencies, precious metals, and digital assets with multi-source consensus rates and interactive trend charts.
+MineAtlas Currencies is a self-contained web application for converting global fiat currencies, precious metals, and cryptocurrencies in real time. Featuring two-way any-to-any conversion (including USD, INR, EUR, BTC, and 1,200+ additional assets), a searchable asset directory, 30-day Chart.js trend visualization, and a built-in conversion advisor, it aggregates live market rates from ExchangeRate-API, Frankfurter, fawazahmed0 Currency API, CoinPaprika, and CoinLore with automatic offline baseline fallback.
+It documents the two-way currency and cryptocurrency converter, the five live market data sources (ExchangeRate-API, Frankfurter, fawazahmed0 Currency API, CoinPaprika, and CoinLore), and browser usage instructions.
