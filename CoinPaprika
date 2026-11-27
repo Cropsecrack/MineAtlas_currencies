@@ -1,0 +1,15 @@
+<div class="rate-widget" id="coinpaprika-widget" style="font-family:sans-serif;padding:16px;border:1px solid #e2e8f0;border-radius:12px;max-width:420px;background:#fff;color:#0f172a;">
+  <h3 style="margin:0 0 6px;">CoinPaprika</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:#475569;">Live cryptocurrency prices and 24-hour market changes across global exchanges.</p>
+  <a href="https://coinpaprika.com/" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-size:14px;">Visit coinpaprika.com</a>
+  <pre id="coinpaprika-out" style="margin:12px 0 0;padding:10px;background:#f8fafc;border-radius:8px;font-size:13px;">Loading crypto prices...</pre>
+</div>
+<script>
+  fetch("https://api.coinpaprika.com/v1/tickers?quotes=USD&limit=3")
+    .then(r => r.json())
+    .then(arr => {
+      document.getElementById("coinpaprika-out").textContent =
+        arr.slice(0, 3).map(c => `${c.symbol}: $${c.quotes.USD.price.toFixed(2)}`).join(" | ");
+    })
+    .catch(() => { document.getElementById("coinpaprika-out").textContent = "Unable to load CoinPaprika."; });
+</script>
