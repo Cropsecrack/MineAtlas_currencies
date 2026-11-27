@@ -1,0 +1,15 @@
+<div class="rate-widget" id="fawaz-widget" style="font-family:sans-serif;padding:16px;border:1px solid #e2e8f0;border-radius:12px;max-width:420px;background:#fff;color:#0f172a;">
+  <h3 style="margin:0 0 6px;">fawazahmed0 Currency API</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:#475569;">300+ fiat, metal, and cryptocurrency rates served via jsDelivr CDN.</p>
+  <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-size:14px;">Visit GitHub Repository</a>
+  <pre id="fawaz-out" style="margin:12px 0 0;padding:10px;background:#f8fafc;border-radius:8px;font-size:13px;">Loading CDN rates...</pre>
+</div>
+<script>
+  fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json")
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById("fawaz-out").textContent =
+        `1 USD = ${d.usd.inr.toFixed(2)} INR | ${d.usd.eur.toFixed(4)} EUR | ${d.usd.btc.toFixed(8)} BTC`;
+    })
+    .catch(() => { document.getElementById("fawaz-out").textContent = "Unable to load fawazahmed0 CDN."; });
+</script>
