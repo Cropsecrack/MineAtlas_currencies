@@ -1,0 +1,15 @@
+<div class="rate-widget" id="frankfurter-widget" style="font-family:sans-serif;padding:16px;border:1px solid #e2e8f0;border-radius:12px;max-width:420px;background:#fff;color:#0f172a;">
+  <h3 style="margin:0 0 6px;">Frankfurter</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:#475569;">Central-bank reference exchange rates and historical time series.</p>
+  <a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-size:14px;">Visit frankfurter.dev</a>
+  <pre id="frankfurter-out" style="margin:12px 0 0;padding:10px;background:#f8fafc;border-radius:8px;font-size:13px;">Loading central-bank rates...</pre>
+</div>
+<script>
+  fetch("https://api.frankfurter.dev/v1/latest?base=USD")
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById("frankfurter-out").textContent =
+        `1 USD = ${d.rates.INR.toFixed(2)} INR | ${d.rates.EUR.toFixed(4)} EUR | ${d.rates.JPY.toFixed(2)} JPY`;
+    })
+    .catch(() => { document.getElementById("frankfurter-out").textContent = "Unable to load Frankfurter."; });
+</script>
