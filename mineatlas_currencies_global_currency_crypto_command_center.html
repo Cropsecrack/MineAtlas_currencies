@@ -1,0 +1,1306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="MineAtlas Currencies — Real-time multi-source currency and cryptocurrency command center covering 1,200+ global fiat currencies, metals, and crypto assets.">
+  <title>MineAtlas Currencies — Global Currency &amp; Crypto Command Center</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2360a5fa'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='900' font-size='38' fill='%230d1c14'%3EM%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      color-scheme:light;
+      --bg:#ffffff;--bg-elev:#f8fafc;--panel:rgba(255,255,255,.92);--panel2:rgba(248,250,252,.96);--panel3:#f1f5f9;
+      --text:#0f172a;--muted:#475569;--line:rgba(15,23,42,.10);--line-bright:rgba(37,99,235,.45);
+      --green:#2563eb;--mint:#7c3aed;--gold:#ea580c;--coral:#e11d48;--emerald:#059669;
+      --radius:20px;--max:1220px;
+      --ease-out:cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring:cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;background:var(--bg);color:var(--text);line-height:1.55;overflow-x:hidden;
+      background-image:
+        radial-gradient(circle at 50% -5%, rgba(37,99,235,.07), transparent 48%),
+        radial-gradient(circle at 82% 28%, rgba(234,88,12,.04), transparent 42%),
+        radial-gradient(circle at 15% 65%, rgba(124,58,237,.05), transparent 45%);
+    }
+    a{color:inherit;text-decoration:none}
+    button,input,select{font:inherit}
+    button{color:inherit}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-variant-numeric:tabular-nums}
+    .wrap{width:min(var(--max),calc(100% - 40px));margin:auto}
+
+    /* Scroll progress, ambient canvas, cursor aura, laser curtain */
+    .scroll-progress{
+      position:fixed;top:0;left:0;height:3px;width:0%;z-index:100;
+      background:linear-gradient(90deg,var(--mint),var(--green),var(--gold));
+      box-shadow:0 0 14px rgba(96,165,250,.65);transition:width .08s linear;
+    }
+    #ambientCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:-3;pointer-events:none;opacity:.7}
+    #cursorAura{
+      position:fixed;width:560px;height:560px;border-radius:50%;pointer-events:none;z-index:-2;
+      background:radial-gradient(circle, rgba(96,165,250,.12) 0%, rgba(167,139,250,.07) 35%, transparent 70%);
+      transform:translate(-50%,-50%);will-change:left,top;
+    }
+    #pageCurtain{
+      position:fixed;inset:0;z-index:90;pointer-events:none;opacity:0;
+      background:linear-gradient(110deg, transparent 0%, rgba(96,165,250,.24) 42%, rgba(248,250,252,.48) 50%, rgba(251,146,60,.24) 58%, transparent 100%);
+      transform:translateX(-110%);
+    }
+    #pageCurtain.sweep{animation:curtainSweep .55s var(--ease-out) forwards}
+    @keyframes curtainSweep{0%{opacity:0;transform:translateX(-100%)}35%{opacity:1}100%{opacity:0;transform:translateX(100%)}}
+
+    /* Header */
+    .topbar{
+      position:sticky;top:0;z-index:35;background:rgba(255,255,255,.86);
+      border-bottom:1px solid var(--line);backdrop-filter:blur(18px);
+      transition:background .35s var(--ease-out),box-shadow .35s ease;
+    }
+    .topbar.scrolled{background:rgba(255,255,255,.96);box-shadow:0 10px 30px rgba(15,23,42,.08)}
+    .nav{height:70px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:-.04em;font-size:1.12rem;white-space:nowrap}
+    .brand-mark{
+      display:grid;place-items:center;width:36px;height:36px;border-radius:12px;
+      background:linear-gradient(135deg,var(--green),var(--mint));color:#ffffff;font-weight:950;
+      transition:transform .45s var(--ease-spring),box-shadow .35s ease;
+    }
+    .brand:hover .brand-mark{transform:rotate(-12deg) scale(1.12);box-shadow:0 0 28px rgba(96,165,250,.5)}
+    .navlinks{display:flex;gap:22px;color:var(--muted);font-size:.9rem}
+    .navlinks a{position:relative;padding:6px 0;transition:color .25s ease,transform .25s ease}
+    .navlinks a::after{
+      content:"";position:absolute;left:0;bottom:0;width:100%;height:2px;
+      background:linear-gradient(90deg,var(--green),var(--mint));transform:scaleX(0);transform-origin:right;
+      transition:transform .32s var(--ease-out);
+    }
+    .navlinks a:hover,.navlinks a.active-tab{color:var(--green)}
+    .navlinks a.active-tab{font-weight:700}
+    .navlinks a:hover::after,.navlinks a.active-tab::after{transform:scaleX(1);transform-origin:left}
+    .nav-right{display:flex;align-items:center;gap:10px}
+
+    .status-pill{
+      display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+      border:1px solid var(--line);background:#f8fafc;font-size:.76rem;color:var(--muted);
+    }
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 12px var(--emerald);animation:pulseDot 2s infinite}
+    .dot.warn{background:var(--gold);box-shadow:0 0 12px var(--gold)}
+    @keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.55);opacity:.45}}
+
+    /* Scrolling Live Ticker Ribbon */
+    .ticker-bar{
+      overflow:hidden;border-bottom:1px solid var(--line);background:rgba(248,250,252,.94);
+      backdrop-filter:blur(10px);height:36px;display:flex;align-items:center;
+    }
+    .ticker-track{
+      display:flex;gap:32px;white-space:nowrap;will-change:transform;
+      animation:tickerScroll 36s linear infinite;padding-left:20px;
+    }
+    .ticker-bar:hover .ticker-track{animation-play-state:paused}
+    @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:.76rem;color:var(--muted);cursor:pointer;transition:color .2s ease}
+    .ticker-item:hover{color:var(--green)}
+    .ticker-pair{font-weight:800;color:var(--text)}
+    .ticker-val{color:var(--green);font-weight:700}
+
+    /* Kinetic Shimmer Buttons */
+    .button{
+      position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:11px 18px;border:1px solid var(--line);border-radius:999px;
+      background:#f8fafc;color:var(--text);font-weight:700;cursor:pointer;
+      transition:transform .3s var(--ease-spring),border-color .25s ease,background .25s ease,box-shadow .3s ease;
+    }
+    .button::before{
+      content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;
+      background:linear-gradient(120deg,transparent,rgba(255,255,255,.24),transparent);
+      transform:skewX(-20deg);transition:left .55s var(--ease-out);pointer-events:none;
+    }
+    .button:hover::before{left:140%}
+    .button:hover{transform:translateY(-3px) scale(1.02);border-color:rgba(96,165,250,.65);background:rgba(96,165,250,.11);box-shadow:0 12px 26px rgba(0,0,0,.38)}
+    .button:active{transform:translateY(0) scale(.97)}
+    .button.primary{background:var(--green);color:#ffffff;border-color:var(--green)}
+    .button.primary:hover{background:#1d4ed8;box-shadow:0 12px 28px rgba(37,99,235,.25)}
+    .button.sm{padding:7px 13px;font-size:.8rem}
+
+    /* Volumetric Hero */
+    .hero{position:relative;isolation:isolate;overflow:hidden;min-height:480px;display:flex;align-items:center;border-bottom:1px solid var(--line)}
+    #heroCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block}
+    .hero:after{
+      content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+      background:
+        radial-gradient(ellipse 55% 45% at 72% 38%, rgba(37,99,235,.10), transparent 65%),
+        radial-gradient(ellipse 35% 35% at 78% 58%, rgba(234,88,12,.06), transparent 60%),
+        linear-gradient(90deg,#fffffff5 0%,#ffffffd4 52%,#ffffff44 100%),
+        linear-gradient(0deg,#ffffff 0%,transparent 35%);
+    }
+    .hero-content{max-width:740px;padding:68px 0 88px}
+    .hero-stagger{opacity:0;transform:translateY(28px) scale(.97);filter:blur(6px);animation:heroIn .85s var(--ease-out) forwards}
+    .hero-stagger:nth-child(1){animation-delay:.06s}
+    .hero-stagger:nth-child(2){animation-delay:.18s}
+    .hero-stagger:nth-child(3){animation-delay:.30s}
+    .hero-stagger:nth-child(4){animation-delay:.42s}
+    .hero-stagger:nth-child(5){animation-delay:.52s}
+    @keyframes heroIn{to{opacity:1;transform:none;filter:blur(0)}}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:9px;padding:7px 13px;border:1px solid #60a5fa44;border-radius:999px;
+      color:var(--green);background:#60a5fa0c;font-size:.74rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    }
+    h1{font-size:clamp(2.4rem,5.4vw,4.5rem);line-height:1.01;letter-spacing:-.055em;margin:18px 0}
+    h1 em{font-style:normal;background:linear-gradient(90deg,var(--green),var(--mint),var(--gold));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradShift 6s ease infinite}
+    @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+    .hero p{max-width:600px;color:#334155;font-size:1.04rem;margin:0}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+    .huly-laser-line{
+      height:1px;width:100%;margin-top:28px;
+      background:linear-gradient(90deg,transparent,rgba(96,165,250,.85),rgba(248,250,252,.95),rgba(251,146,60,.85),transparent);
+      box-shadow:0 0 24px rgba(96,165,250,.55);
+    }
+
+    /* Stats Ribbon with Conic Beam */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-28px;position:relative;z-index:2}
+    .stat{
+      position:relative;overflow:hidden;cursor:pointer;padding:20px 22px;border:1px solid var(--line);
+      background:rgba(255,255,255,.94);box-shadow:0 10px 28px rgba(15,23,42,.06);backdrop-filter:blur(14px);border-radius:18px;
+      transition:transform .4s var(--ease-spring),border-color .3s ease,box-shadow .35s ease;
+    }
+    .stat::before,.glass-panel::before{
+      content:"";position:absolute;top:50%;left:50%;width:180%;height:180%;z-index:0;pointer-events:none;
+      background:conic-gradient(from 0deg,transparent 0deg 280deg,rgba(96,165,250,.55) 315deg,rgba(248,250,252,.8) 335deg,rgba(251,146,60,.55) 350deg,transparent 360deg);
+      transform:translate(-50%,-50%);animation:spinBeam 7s linear infinite;opacity:.32;transition:opacity .3s ease;
+    }
+    .stat:hover::before{opacity:.85}
+    .stat::after,.glass-panel::after{content:"";position:absolute;inset:1.5px;border-radius:inherit;background:inherit;z-index:0;pointer-events:none}
+    .stat>*,.glass-panel>*{position:relative;z-index:1}
+    @keyframes spinBeam{to{transform:translate(-50%,-50%) rotate(360deg)}}
+    .stat:hover{transform:translateY(-6px) scale(1.02);border-color:rgba(96,165,250,.55);box-shadow:0 18px 36px rgba(0,0,0,.45)}
+    .stat strong{display:block;color:var(--green);font-size:1.45rem;letter-spacing:-.04em}
+    .stat span{color:var(--muted);font-size:.82rem}
+
+    /* Sections, Subheadings & Scroll Reveal */
+    .section{padding:58px 0}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+    .kicker{color:var(--mint);font-weight:800;text-transform:uppercase;font-size:.75rem;letter-spacing:.14em;display:block}
+    h2{font-size:clamp(1.65rem,3vw,2.45rem);line-height:1.08;letter-spacing:-.045em;margin:6px 0 0}
+    .section-head p,.muted{color:var(--muted);margin:0}
+    .subhead{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;margin:18px 0 8px}
+
+    .reveal{opacity:0;transform:translateY(32px) scale(.95);filter:blur(6px);transition:opacity .75s var(--ease-out),transform .8s var(--ease-spring),filter .75s var(--ease-out)}
+    .reveal.visible{opacity:1;transform:none;filter:blur(0)}
+
+    /* Converter Panel */
+    .glass-panel{
+      position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);
+      background:var(--panel);backdrop-filter:blur(16px);padding:26px;
+      box-shadow:0 14px 40px rgba(15,23,42,.07),inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    .glass-panel::before{opacity:.14}
+    .converter-row{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center}
+    @media(max-width:760px){.converter-row{grid-template-columns:1fr}}
+
+    .currency-box{
+      position:relative;background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:15px 18px;
+      transition:border-color .22s ease,box-shadow .22s ease,transform .2s ease;
+    }
+    .currency-box:focus-within{border-color:var(--mint);box-shadow:0 0 0 3px rgba(167,139,250,.18);transform:translateY(-1px)}
+    .box-label{font-size:.75rem;color:var(--muted);font-weight:650;margin-bottom:8px;display:block}
+    .box-main{display:flex;align-items:center;gap:10px}
+    .amt-input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font-size:1.75rem;font-weight:800;transition:color .25s ease}
+    .amt-input.flash{color:var(--green)}
+    .picker-btn{
+      display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;
+      background:var(--panel3);border:1px solid var(--line);color:var(--text);font-weight:750;font-size:.94rem;
+      cursor:pointer;white-space:nowrap;transition:border-color .2s ease,background .2s ease,transform .2s var(--ease-spring);
+    }
+    .picker-btn:hover{border-color:var(--green);background:rgba(96,165,250,.14);transform:scale(1.03)}
+    .picker-sub{font-size:.77rem;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .picker-menu{
+      position:absolute;right:0;top:calc(100% + 6px);width:330px;max-width:calc(100vw - 40px);
+      background:#ffffff;border:1px solid var(--line-bright);border-radius:14px;
+      box-shadow:0 20px 44px rgba(15,23,42,.15);z-index:60;display:none;flex-direction:column;overflow:hidden;
+    }
+    .picker-menu.open{display:flex;animation:popMenu .24s var(--ease-spring) both}
+    @keyframes popMenu{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:none}}
+    .picker-search{width:100%;border:0;border-bottom:1px solid var(--line);background:#f8fafc;color:var(--text);padding:11px 14px;font-size:.86rem;outline:0}
+    .picker-list{max-height:270px;overflow-y:auto}
+    .picker-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;cursor:pointer;font-size:.84rem;border-bottom:1px solid rgba(15,23,42,.06);transition:background .15s ease}
+    .picker-item:hover,.picker-item.active{background:rgba(96,165,250,.14)}
+    .picker-item-code{font-weight:750;min-width:56px}
+    .picker-item-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .picker-item-cat{font-size:.68rem;color:var(--mint);text-transform:uppercase}
+
+    .swap-btn{
+      width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel3);color:var(--text);
+      display:grid;place-items:center;cursor:pointer;transition:transform .35s var(--ease-spring),border-color .2s ease,box-shadow .25s ease;
+    }
+    .swap-btn:hover{border-color:var(--green);transform:rotate(180deg) scale(1.08);box-shadow:0 0 20px rgba(96,165,250,.3)}
+    @media(max-width:760px){.swap-btn{width:100%;height:40px;border-radius:12px}}
+
+    .quick-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .chip-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .chip{
+      padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#f8fafc;
+      color:var(--muted);font-size:.78rem;font-weight:650;cursor:pointer;transition:all .22s var(--ease-spring);
+    }
+    .chip:hover,.chip.active{background:rgba(96,165,250,.16);color:var(--green);border-color:var(--green);transform:translateY(-2px)}
+
+    .summary-bar{
+      margin-top:18px;padding:16px 20px;border-radius:14px;
+      background:linear-gradient(135deg,rgba(96,165,250,.10),rgba(167,139,250,.08));
+      border:1px solid rgba(96,165,250,.28);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    }
+    .summary-rate{font-size:1.12rem;font-weight:800}
+    .summary-sub{font-size:.82rem;color:var(--muted);margin-top:3px}
+
+    /* 3D Tilt Benchmark Cards with Spotlight Glare */
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;perspective:1200px}
+    @media(max-width:960px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:600px){.grid,.stats{grid-template-columns:1fr}.navlinks{display:none}}
+    .pop-card{
+      position:relative;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--panel);
+      padding:16px;cursor:pointer;transform-style:preserve-3d;will-change:transform;
+      transition:transform .32s var(--ease-out),border-color .25s ease,box-shadow .3s ease;
+    }
+    .pop-card::after{
+      content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+      background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(96,165,250,.18),transparent 50%);
+      transition:opacity .25s ease;
+    }
+    .pop-card:hover::after{opacity:1}
+    .pop-card:hover{border-color:rgba(167,139,250,.6);box-shadow:0 20px 44px rgba(0,0,0,.5)}
+    .pop-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .pop-code{font-weight:800;font-size:.98rem;color:var(--text)}
+    .pop-cat{font-size:.68rem;color:var(--mint);text-transform:uppercase;font-weight:700}
+    .pop-val{font-size:1.18rem;font-weight:800;color:var(--green)}
+    .pop-name{font-size:.76rem;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* Directory & Table */
+    .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap}
+    .filter{
+      padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;
+      color:var(--muted);cursor:pointer;font-weight:650;font-size:.84rem;transition:all .24s var(--ease-spring);
+    }
+    .filter:hover{border-color:var(--green);color:var(--text);transform:translateY(-1px)}
+    .filter.active{color:#ffffff;background:var(--green);border-color:var(--green)}
+    .search-input{
+      padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;color:var(--text);outline:none;
+    }
+    .search-input:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(167,139,250,.16)}
+
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+    table.dir-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:680px}
+    .dir-table th,.dir-table td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line)}
+    .dir-table th{color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;background:#f8fafc}
+    .dir-table tbody tr{cursor:pointer;transition:background .18s ease}
+    .dir-table tbody tr:hover{background:rgba(96,165,250,.08)}
+    .dir-table tbody tr.selected{background:rgba(167,139,250,.12)}
+    .pos{color:var(--emerald)}
+    .neg{color:var(--coral)}
+    .pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+
+    /* Compare & Feeds */
+    .split-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    @media(max-width:860px){.split-2{grid-template-columns:1fr}}
+    .chart-wrap{position:relative;height:260px;margin-top:12px}
+    .feed-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .feed-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fafc}
+    .badge{padding:4px 10px;border-radius:999px;font-size:.7rem;font-weight:800;text-transform:uppercase}
+    .badge.ok{background:rgba(16,185,129,.16);color:var(--emerald)}
+    .badge.warn{background:rgba(251,146,60,.16);color:var(--gold)}
+    .badge.err{background:rgba(251,113,133,.16);color:var(--coral)}
+
+    /* Multi-Page Views with 3D Warp */
+    .page-view{display:none;perspective:1400px}
+    .page-view.active{display:block;animation:pageWarpIn .6s var(--ease-spring) both}
+    @keyframes pageWarpIn{0%{opacity:0;transform:translateY(28px) scale(.95) rotateX(4deg);filter:blur(10px)}100%{opacity:1;transform:none;filter:blur(0)}}
+
+    /* AI Advisor Floating Drawer */
+    .chat-toggle{
+      position:fixed;right:22px;bottom:22px;z-index:50;width:54px;height:54px;border-radius:50%;
+      border:0;background:linear-gradient(135deg,var(--green),var(--mint));color:#ffffff;
+      font-weight:900;font-size:.9rem;cursor:pointer;box-shadow:0 14px 34px rgba(96,165,250,.38);
+      transition:transform .28s var(--ease-spring);
+    }
+    .chat-toggle:hover{transform:scale(1.1) rotate(8deg)}
+    .chat{
+      position:fixed;right:22px;bottom:88px;z-index:50;width:min(380px,calc(100vw - 28px));height:470px;
+      border:1px solid var(--line-bright);border-radius:20px;background:#ffffff;
+      box-shadow:0 22px 56px rgba(15,23,42,.18);display:none;flex-direction:column;overflow:hidden;
+    }
+    .chat.open{display:flex;animation:popMenu .28s var(--ease-spring) both}
+    .chat-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border-bottom:1px solid var(--line)}
+    .chat-head strong{display:block;font-size:.95rem}
+    .chat-head small{color:var(--muted);font-size:.76rem}
+    .chat-close{border:0;background:none;color:var(--muted);font-size:1.3rem;cursor:pointer}
+    .messages{flex:1;padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+    .message{max-width:88%;padding:10px 12px;border-radius:14px;background:#f1f5f9;color:#0f172a;font-size:.84rem;white-space:pre-wrap;animation:popMenu .24s ease both}
+    .message.user{align-self:flex-end;background:var(--green);color:#ffffff;font-weight:600}
+    .prompts{display:flex;gap:6px;overflow:auto;padding:0 12px 10px}
+    .prompt{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:transparent;color:var(--muted);font-size:.74rem;cursor:pointer;transition:border-color .2s ease}
+    .prompt:hover{border-color:var(--green);color:var(--green)}
+    .chat-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+    .chat-form input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;color:var(--text)}
+    .chat-form button{border:0;border-radius:12px;padding:0 15px;background:var(--green);color:#ffffff;font-weight:800;cursor:pointer}
+    .msg-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+    .msg-chip{border:1px solid rgba(96,165,250,.4);background:rgba(96,165,250,.1);color:var(--green);border-radius:999px;padding:4px 9px;font-size:.72rem;font-weight:700;cursor:pointer}
+    .msg-chip:hover{background:var(--green);color:#080c18}
+
+    footer{border-top:1px solid var(--line);padding:28px 0 40px;color:var(--muted);font-size:.82rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+
+    @media(prefers-reduced-motion:reduce){
+      *,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+      .reveal,.hero-stagger{opacity:1;transform:none;filter:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="scroll-progress" id="scrollProgress"></div>
+  <canvas id="ambientCanvas" aria-hidden="true"></canvas>
+  <div id="cursorAura" aria-hidden="true"></div>
+  <div id="pageCurtain" aria-hidden="true"></div>
+
+  <header class="topbar" id="topbar">
+    <div class="wrap nav">
+      <a class="brand" href="#/overview" data-page="overview"><span class="brand-mark">M</span>MineAtlas Currencies</a>
+      <nav class="navlinks" aria-label="Main navigation">
+        <a href="#/overview" data-page="overview" class="active-tab">Overview</a>
+        <a href="#/directory" data-page="directory">Directory</a>
+        <a href="#/compare" data-page="compare">Compare &amp; Chart</a>
+        <a href="#/feeds" data-page="feeds">Live Sources</a>
+      </nav>
+      <div class="nav-right">
+        <span class="status-pill"><span class="dot warn" id="liveDot"></span><span id="liveStatusText">Syncing...</span></span>
+        <button class="button primary sm" id="refreshBtn" type="button">Refresh Rates</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Live Scrolling Market Ticker -->
+  <div class="ticker-bar" aria-label="Live exchange ticker">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+
+  <main id="top">
+    <!-- OVERVIEW PAGE -->
+    <div class="page-view active" data-page="overview">
+      <section class="hero">
+        <canvas id="heroCanvas" aria-hidden="true"></canvas>
+        <div class="wrap">
+          <div class="hero-content">
+            <span class="eyebrow hero-stagger"><span class="dot"></span> 160+ Fiat · Metals · 1,000+ Cryptocurrencies</span>
+            <h1 class="hero-stagger">MineAtlas Currencies<br>with <em>live precision.</em></h1>
+            <p class="hero-stagger">Convert US Dollars, Indian Rupees, Euros, and over 1,200 world currencies and cryptocurrencies using multi-source consensus rates.</p>
+            <div class="hero-actions hero-stagger">
+              <a class="button primary" href="#converterSection">Open Converter</a>
+              <a class="button" href="#/directory" data-page="directory">Browse 1,200+ Assets</a>
+              <a class="button" href="#/compare" data-page="compare">30-Day Trend Chart</a>
+            </div>
+            <div class="huly-laser-line hero-stagger" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap stats" aria-label="Market highlights">
+        <div class="stat reveal" data-page="directory" data-cat="fiat"><strong>160+ Fiat</strong><span>USD, INR, EUR, GBP, JPY &amp; global ISO currencies</span></div>
+        <div class="stat reveal" data-page="directory" data-cat="crypto"><strong>1,000+ Crypto</strong><span>BTC, ETH, SOL, XRP, BNB &amp; altcoin markets</span></div>
+        <div class="stat reveal" data-page="feeds"><strong>5 Live Feeds</strong><span>Central banks &amp; multi-exchange consensus</span></div>
+        <div class="stat reveal" data-page="compare"><strong>Any-to-Any</strong><span>Instant two-way cross-rate calculation</span></div>
+      </section>
+
+      <section class="section wrap" id="converterSection">
+        <div class="section-head reveal">
+          <div>
+            <span class="kicker">Real-Time Exchange Calculator</span>
+            <h2>Universal Currency &amp; Crypto Converter</h2>
+          </div>
+          <p>Type an amount in either box or click any currency pill to search all 1,200+ assets.</p>
+        </div>
+
+        <div class="glass-panel reveal">
+          <div class="converter-row">
+            <div class="currency-box" id="fromBox">
+              <span class="box-label">From Amount</span>
+              <div class="box-main">
+                <input id="fromAmountInput" class="amt-input mono" type="number" step="any" min="0" value="100" aria-label="Source amount">
+                <button class="picker-btn" id="fromPickerBtn" type="button">
+                  <span class="mono" id="fromBtnCode">USD</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+              <div class="picker-sub" id="fromFullName">US Dollar · FIAT</div>
+              <div class="picker-menu" id="fromMenu">
+                <input class="picker-search" id="fromSearchInput" type="text" placeholder="Search code or name (e.g. USD, INR, BTC)...">
+                <div class="picker-list" id="fromList"></div>
+              </div>
+            </div>
+
+            <button class="swap-btn" id="swapBtn" type="button" title="Swap currencies" aria-label="Swap currencies">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+            </button>
+
+            <div class="currency-box" id="toBox">
+              <span class="box-label">Converted To</span>
+              <div class="box-main">
+                <input id="toAmountInput" class="amt-input mono" type="number" step="any" min="0" value="9252.83" aria-label="Converted amount">
+                <button class="picker-btn" id="toPickerBtn" type="button">
+                  <span class="mono" id="toBtnCode">INR</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+              <div class="picker-sub" id="toFullName">Indian Rupee · FIAT</div>
+              <div class="picker-menu" id="toMenu">
+                <input class="picker-search" id="toSearchInput" type="text" placeholder="Search code or name (e.g. INR, EUR, SOL)...">
+                <div class="picker-list" id="toList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="subhead">Quick Pairs &amp; Amount Presets</div>
+          <div class="quick-bar">
+            <div class="chip-group">
+              <button class="chip" type="button" data-pair="USD:INR">USD to INR</button>
+              <button class="chip" type="button" data-pair="INR:USD">INR to USD</button>
+              <button class="chip" type="button" data-pair="USD:EUR">USD to EUR</button>
+              <button class="chip" type="button" data-pair="USD:BTC">USD to BTC</button>
+              <button class="chip" type="button" data-pair="INR:BTC">INR to BTC</button>
+              <button class="chip" type="button" data-pair="USD:AED">USD to AED</button>
+            </div>
+            <div class="chip-group">
+              <button class="chip" type="button" data-amt="1">1</button>
+              <button class="chip active" type="button" data-amt="100">100</button>
+              <button class="chip" type="button" data-amt="1000">1,000</button>
+              <button class="chip" type="button" data-amt="10000">10,000</button>
+            </div>
+          </div>
+
+          <div class="summary-bar">
+            <div>
+              <div class="summary-rate mono" id="headlineRate">1 USD = 92.5283 INR</div>
+              <div class="summary-sub mono" id="inverseRate">1 INR = 0.010808 USD</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="button sm" id="copyBtn" type="button">Copy Result</button>
+              <a class="button sm" href="#/compare" data-page="compare">View 30-Day Chart</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section wrap" style="padding-top:0;">
+        <div class="section-head reveal">
+          <div>
+            <span class="kicker">Popular Benchmarks</span>
+            <h2>Quick Conversions for <span class="mono" id="popularAmtLabel">100 USD</span></h2>
+          </div>
+          <p>Click any benchmark card to set it as your target currency.</p>
+        </div>
+        <div class="grid" id="popularGrid"></div>
+      </section>
+    </div>
+
+    <!-- DIRECTORY PAGE -->
+    <div class="page-view" data-page="directory">
+      <section class="section wrap">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Complete Asset Directory</span>
+            <h2>All 1,200+ Currencies &amp; Cryptocurrencies</h2>
+          </div>
+          <p>Filter by asset class or search by ticker and name. Click any row to load it into the converter.</p>
+        </div>
+
+        <div class="toolbar">
+          <div class="filters">
+            <button class="filter active" data-cat="all" type="button">All Assets</button>
+            <button class="filter" data-cat="fiat" type="button">Fiat Currencies</button>
+            <button class="filter" data-cat="crypto" type="button">Cryptocurrencies</button>
+            <button class="filter" data-cat="metal" type="button">Metals &amp; Units</button>
+          </div>
+          <input id="dirSearch" class="search-input" style="width:280px;max-width:100%;" type="text" placeholder="Search Rupee, Yen, BTC, SOL...">
+        </div>
+
+        <div class="table-wrap">
+          <table class="dir-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Asset Name</th>
+                <th>Type</th>
+                <th>1 <span class="mono" id="thFrom">USD</span> Equals</th>
+                <th>Converted (<span class="mono" id="thAmt">100 USD</span>)</th>
+                <th>24h Change</th>
+              </tr>
+            </thead>
+            <tbody id="dirBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <span id="pageInfo">Showing 1-50</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="button sm" id="prevPageBtn" type="button">Previous</button>
+            <span class="mono" id="pageNum">Page 1</span>
+            <button class="button sm" id="nextPageBtn" type="button">Next</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- COMPARE & CHART PAGE -->
+    <div class="page-view" data-page="compare">
+      <section class="section wrap">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Historical Telemetry &amp; Provenance</span>
+            <h2 id="chartTitle">30-Day Exchange Rate Trend</h2>
+          </div>
+          <p>Inspect historical central-bank series and per-source quotes for your active pair.</p>
+        </div>
+
+        <div class="split-2">
+          <div class="glass-panel">
+            <span class="kicker">30-Day Trajectory</span>
+            <h3 style="margin:6px 0 0;" id="chartSubTitle">USD to INR</h3>
+            <div class="chart-wrap"><canvas id="rateChart"></canvas></div>
+          </div>
+          <div class="glass-panel">
+            <span class="kicker">Rate Provenance</span>
+            <h3 style="margin:6px 0 0;">Per-Source Quotes</h3>
+            <div class="feed-list" id="pairQuotesGrid"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- LIVE SOURCES PAGE -->
+    <div class="page-view" data-page="feeds">
+      <section class="section wrap">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Upstream Market Aggregators</span>
+            <h2>Live Data Sources &amp; Consensus Engine</h2>
+          </div>
+          <p>MineAtlas Currencies queries five independent public market aggregators in parallel and computes median consensus rates.</p>
+        </div>
+
+        <div class="glass-panel">
+          <div class="feed-list" id="feedList"></div>
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="button primary sm" id="refreshBtn2" type="button">Refresh All Feeds</button>
+            <button class="button sm" id="loadMoreCryptoBtn" type="button">Load +1,000 Extended Crypto</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="wrap">
+    <span>MineAtlas Currencies — Global Currency &amp; Crypto Command Center.</span>
+    <span class="mono" id="footerTime">Built-in Baseline + Live Multi-Source Sync</span>
+  </footer>
+
+  <!-- MineAtlas Currencies AI Advisor -->
+  <section class="chat" id="chat" aria-label="MineAtlas Currencies Advisor" aria-hidden="true">
+    <div class="chat-head">
+      <div><strong>MineAtlas Currencies Advisor</strong><small>Instant Conversion &amp; Rate Engine</small></div>
+      <button class="chat-close" id="chatClose" type="button" aria-label="Close advisor">x</button>
+    </div>
+    <div class="messages" id="messages" aria-live="polite">
+      <div class="message">Enter a conversion query, such as "500 USD to INR", "10000 INR to BTC", or "Compare BTC vs ETH".</div>
+    </div>
+    <div class="prompts">
+      <button class="prompt" type="button">500 USD to INR</button>
+      <button class="prompt" type="button">10000 INR to BTC</button>
+      <button class="prompt" type="button">Compare BTC vs ETH</button>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <input id="chatInput" autocomplete="off" placeholder="Convert any currency or crypto..." aria-label="Advisor query">
+      <button type="submit">Send</button>
+    </form>
+  </section>
+  <button class="chat-toggle" id="chatToggle" type="button" aria-label="Open MineAtlas Currencies Advisor" aria-expanded="false">AI</button>
+
+  <script>
+    const BASELINE_ASSETS = [{"code": "EUR", "name": "Euro", "cat": "fiat", "rate": 0.91037, "rank": 1}, {"code": "GBP", "name": "British Pound Sterling", "cat": "fiat", "rate": 0.762425, "rank": 2}, {"code": "INR", "name": "Indian Rupee", "cat": "fiat", "rate": 92.52825, "rank": 3}, {"code": "JPY", "name": "Japanese Yen", "cat": "fiat", "rate": 159.2025, "rank": 4}, {"code": "CAD", "name": "Canadian Dollar", "cat": "fiat", "rate": 1.42205, "rank": 5}, {"code": "AUD", "name": "Australian Dollar", "cat": "fiat", "rate": 1.505627, "rank": 6}, {"code": "CHF", "name": "Swiss Franc", "cat": "fiat", "rate": 0.83307, "rank": 7}, {"code": "CNY", "name": "Chinese Yuan Renminbi", "cat": "fiat", "rate": 6.7096, "rank": 8}, {"code": "HKD", "name": "Hong Kong Dollar", "cat": "fiat", "rate": 7.78, "rank": 9}, {"code": "SGD", "name": "Singapore Dollar", "cat": "fiat", "rate": 1.34, "rank": 10}, {"code": "NZD", "name": "New Zealand Dollar", "cat": "fiat", "rate": 1.69, "rank": 11}, {"code": "SEK", "name": "Swedish Krona", "cat": "fiat", "rate": 10.45, "rank": 12}, {"code": "NOK", "name": "Norwegian Krone", "cat": "fiat", "rate": 10.75, "rank": 13}, {"code": "DKK", "name": "Danish Krone", "cat": "fiat", "rate": 6.8044, "rank": 14}, {"code": "KRW", "name": "South Korean Won", "cat": "fiat", "rate": 1395.0, "rank": 15}, {"code": "AED", "name": "UAE Dirham", "cat": "fiat", "rate": 3.6725, "rank": 16}, {"code": "SAR", "name": "Saudi Riyal", "cat": "fiat", "rate": 3.75, "rank": 17}, {"code": "QAR", "name": "Qatari Riyal", "cat": "fiat", "rate": 3.64, "rank": 18}, {"code": "KWD", "name": "Kuwaiti Dinar", "cat": "fiat", "rate": 0.307, "rank": 19}, {"code": "BHD", "name": "Bahraini Dinar", "cat": "fiat", "rate": 0.376, "rank": 20}, {"code": "OMR", "name": "Omani Rial", "cat": "fiat", "rate": 0.3845, "rank": 21}, {"code": "JOD", "name": "Jordanian Dinar", "cat": "fiat", "rate": 0.709, "rank": 22}, {"code": "ILS", "name": "Israeli New Shekel", "cat": "fiat", "rate": 3.72, "rank": 23}, {"code": "TRY", "name": "Turkish Lira", "cat": "fiat", "rate": 34.6, "rank": 24}, {"code": "PLN", "name": "Polish Zloty", "cat": "fiat", "rate": 4.05, "rank": 25}, {"code": "CZK", "name": "Czech Koruna", "cat": "fiat", "rate": 22.2449, "rank": 26}, {"code": "HUF", "name": "Hungarian Forint", "cat": "fiat", "rate": 388.0, "rank": 27}, {"code": "RON", "name": "Romanian Leu", "cat": "fiat", "rate": 4.53, "rank": 28}, {"code": "BGN", "name": "Bulgarian Lev", "cat": "fiat", "rate": 1.78, "rank": 29}, {"code": "RSD", "name": "Serbian Dinar", "cat": "fiat", "rate": 106.5, "rank": 30}, {"code": "UAH", "name": "Ukrainian Hryvnia", "cat": "fiat", "rate": 41.4, "rank": 31}, {"code": "RUB", "name": "Russian Ruble", "cat": "fiat", "rate": 99.5, "rank": 32}, {"code": "BYN", "name": "Belarusian Ruble", "cat": "fiat", "rate": 3.27, "rank": 33}, {"code": "GEL", "name": "Georgian Lari", "cat": "fiat", "rate": 2.73, "rank": 34}, {"code": "AMD", "name": "Armenian Dram", "cat": "fiat", "rate": 388.0, "rank": 35}, {"code": "AZN", "name": "Azerbaijani Manat", "cat": "fiat", "rate": 1.7, "rank": 36}, {"code": "KZT", "name": "Kazakhstani Tenge", "cat": "fiat", "rate": 496.0, "rank": 37}, {"code": "UZS", "name": "Uzbekistani Som", "cat": "fiat", "rate": 12820.0, "rank": 38}, {"code": "KGS", "name": "Kyrgystani Som", "cat": "fiat", "rate": 86.5, "rank": 39}, {"code": "TJS", "name": "Tajikistani Somoni", "cat": "fiat", "rate": 10.65, "rank": 40}, {"code": "TMT", "name": "Turkmenistani Manat", "cat": "fiat", "rate": 3.5, "rank": 41}, {"code": "PKR", "name": "Pakistani Rupee", "cat": "fiat", "rate": 278.0, "rank": 42}, {"code": "BDT", "name": "Bangladeshi Taka", "cat": "fiat", "rate": 119.5, "rank": 43}, {"code": "LKR", "name": "Sri Lankan Rupee", "cat": "fiat", "rate": 291.0, "rank": 44}, {"code": "NPR", "name": "Nepalese Rupee", "cat": "fiat", "rate": 148.0, "rank": 45}, {"code": "BTN", "name": "Bhutanese Ngultrum", "cat": "fiat", "rate": 92.52825, "rank": 46}, {"code": "MVR", "name": "Maldivian Rufiyaa", "cat": "fiat", "rate": 15.42, "rank": 47}, {"code": "AFN", "name": "Afghan Afghani", "cat": "fiat", "rate": 68.5, "rank": 48}, {"code": "IRR", "name": "Iranian Rial", "cat": "fiat", "rate": 42100.0, "rank": 49}, {"code": "IQD", "name": "Iraqi Dinar", "cat": "fiat", "rate": 1310.0, "rank": 50}, {"code": "LBP", "name": "Lebanese Pound", "cat": "fiat", "rate": 89500.0, "rank": 51}, {"code": "SYP", "name": "Syrian Pound", "cat": "fiat", "rate": 13000.0, "rank": 52}, {"code": "YER", "name": "Yemeni Rial", "cat": "fiat", "rate": 250.0, "rank": 53}, {"code": "MXN", "name": "Mexican Peso", "cat": "fiat", "rate": 20.25, "rank": 54}, {"code": "BRL", "name": "Brazilian Real", "cat": "fiat", "rate": 5.78, "rank": 55}, {"code": "ARS", "name": "Argentine Peso", "cat": "fiat", "rate": 1005.0, "rank": 56}, {"code": "CLP", "name": "Chilean Peso", "cat": "fiat", "rate": 975.0, "rank": 57}, {"code": "COP", "name": "Colombian Peso", "cat": "fiat", "rate": 4410.0, "rank": 58}, {"code": "PEN", "name": "Peruvian Sol", "cat": "fiat", "rate": 3.4626, "rank": 59}, {"code": "UYU", "name": "Uruguayan Peso", "cat": "fiat", "rate": 42.8, "rank": 60}, {"code": "PYG", "name": "Paraguayan Guarani", "cat": "fiat", "rate": 7810.0, "rank": 61}, {"code": "BOB", "name": "Bolivian Boliviano", "cat": "fiat", "rate": 6.91, "rank": 62}, {"code": "VES", "name": "Venezuelan Bolivar", "cat": "fiat", "rate": 46.5, "rank": 63}, {"code": "CRC", "name": "Costa Rican Colon", "cat": "fiat", "rate": 510.0, "rank": 64}, {"code": "GTQ", "name": "Guatemalan Quetzal", "cat": "fiat", "rate": 7.72, "rank": 65}, {"code": "HNL", "name": "Honduran Lempira", "cat": "fiat", "rate": 25.3, "rank": 66}, {"code": "NIO", "name": "Nicaraguan Cordoba", "cat": "fiat", "rate": 36.8, "rank": 67}, {"code": "PAB", "name": "Panamanian Balboa", "cat": "fiat", "rate": 1.0, "rank": 68}, {"code": "DOP", "name": "Dominican Peso", "cat": "fiat", "rate": 60.2, "rank": 69}, {"code": "CUP", "name": "Cuban Peso", "cat": "fiat", "rate": 24.0, "rank": 70}, {"code": "JMD", "name": "Jamaican Dollar", "cat": "fiat", "rate": 158.0, "rank": 71}, {"code": "TTD", "name": "Trinidad & Tobago Dollar", "cat": "fiat", "rate": 6.78, "rank": 72}, {"code": "BBD", "name": "Barbadian Dollar", "cat": "fiat", "rate": 2.0, "rank": 73}, {"code": "BSD", "name": "Bahamian Dollar", "cat": "fiat", "rate": 1.0, "rank": 74}, {"code": "BZD", "name": "Belize Dollar", "cat": "fiat", "rate": 2.0, "rank": 75}, {"code": "XCD", "name": "East Caribbean Dollar", "cat": "fiat", "rate": 2.7, "rank": 76}, {"code": "HTG", "name": "Haitian Gourde", "cat": "fiat", "rate": 131.5, "rank": 77}, {"code": "SRD", "name": "Surinamese Dollar", "cat": "fiat", "rate": 35.2, "rank": 78}, {"code": "GYD", "name": "Guyanese Dollar", "cat": "fiat", "rate": 209.0, "rank": 79}, {"code": "AWG", "name": "Aruban Florin", "cat": "fiat", "rate": 1.79, "rank": 80}, {"code": "ANG", "name": "Netherlands Antillean Guilder", "cat": "fiat", "rate": 1.79, "rank": 81}, {"code": "KYD", "name": "Cayman Islands Dollar", "cat": "fiat", "rate": 0.83, "rank": 82}, {"code": "BMD", "name": "Bermudian Dollar", "cat": "fiat", "rate": 1.0, "rank": 83}, {"code": "ZAR", "name": "South African Rand", "cat": "fiat", "rate": 18.1, "rank": 84}, {"code": "EGP", "name": "Egyptian Pound", "cat": "fiat", "rate": 49.6, "rank": 85}, {"code": "NGN", "name": "Nigerian Naira", "cat": "fiat", "rate": 1660.0, "rank": 86}, {"code": "KES", "name": "Kenyan Shilling", "cat": "fiat", "rate": 129.5, "rank": 87}, {"code": "GHS", "name": "Ghanaian Cedi", "cat": "fiat", "rate": 15.8, "rank": 88}, {"code": "MAD", "name": "Moroccan Dirham", "cat": "fiat", "rate": 9.95, "rank": 89}, {"code": "TND", "name": "Tunisian Dinar", "cat": "fiat", "rate": 3.14, "rank": 90}, {"code": "DZD", "name": "Algerian Dinar", "cat": "fiat", "rate": 133.5, "rank": 91}, {"code": "LYD", "name": "Libyan Dinar", "cat": "fiat", "rate": 4.86, "rank": 92}, {"code": "ETB", "name": "Ethiopian Birr", "cat": "fiat", "rate": 124.0, "rank": 93}, {"code": "TZS", "name": "Tanzanian Shilling", "cat": "fiat", "rate": 2640.0, "rank": 94}, {"code": "UGX", "name": "Ugandan Shilling", "cat": "fiat", "rate": 3680.0, "rank": 95}, {"code": "RWF", "name": "Rwandan Franc", "cat": "fiat", "rate": 1370.0, "rank": 96}, {"code": "ZMW", "name": "Zambian Kwacha", "cat": "fiat", "rate": 27.2, "rank": 97}, {"code": "BWP", "name": "Botswanan Pula", "cat": "fiat", "rate": 13.6, "rank": 98}, {"code": "NAD", "name": "Namibian Dollar", "cat": "fiat", "rate": 18.1, "rank": 99}, {"code": "MUR", "name": "Mauritian Rupee", "cat": "fiat", "rate": 46.8, "rank": 100}, {"code": "SCR", "name": "Seychellois Rupee", "cat": "fiat", "rate": 13.9, "rank": 101}, {"code": "AOA", "name": "Angolan Kwanza", "cat": "fiat", "rate": 912.0, "rank": 102}, {"code": "MZN", "name": "Mozambican Metical", "cat": "fiat", "rate": 63.9, "rank": 103}, {"code": "MWK", "name": "Malawian Kwacha", "cat": "fiat", "rate": 1734.0, "rank": 104}, {"code": "XOF", "name": "West African CFA Franc", "cat": "fiat", "rate": 597.16, "rank": 105}, {"code": "XAF", "name": "Central African CFA Franc", "cat": "fiat", "rate": 597.16, "rank": 106}, {"code": "XPF", "name": "CFP Franc", "cat": "fiat", "rate": 108.6, "rank": 107}, {"code": "CDF", "name": "Congolese Franc", "cat": "fiat", "rate": 2845.0, "rank": 108}, {"code": "MGA", "name": "Malagasy Ariary", "cat": "fiat", "rate": 4650.0, "rank": 109}, {"code": "SOS", "name": "Somali Shilling", "cat": "fiat", "rate": 571.0, "rank": 110}, {"code": "SDG", "name": "Sudanese Pound", "cat": "fiat", "rate": 601.0, "rank": 111}, {"code": "SSP", "name": "South Sudanese Pound", "cat": "fiat", "rate": 3450.0, "rank": 112}, {"code": "ERN", "name": "Eritrean Nakfa", "cat": "fiat", "rate": 15.0, "rank": 113}, {"code": "DJF", "name": "Djiboutian Franc", "cat": "fiat", "rate": 177.72, "rank": 114}, {"code": "KMF", "name": "Comorian Franc", "cat": "fiat", "rate": 447.8, "rank": 115}, {"code": "BIF", "name": "Burundian Franc", "cat": "fiat", "rate": 2910.0, "rank": 116}, {"code": "GMD", "name": "Gambian Dalasi", "cat": "fiat", "rate": 70.5, "rank": 117}, {"code": "GNF", "name": "Guinean Franc", "cat": "fiat", "rate": 8600.0, "rank": 118}, {"code": "SLL", "name": "Sierra Leonean Leone", "cat": "fiat", "rate": 22600.0, "rank": 119}, {"code": "SLE", "name": "Sierra Leonean Leone (New)", "cat": "fiat", "rate": 22.6, "rank": 120}, {"code": "LRD", "name": "Liberian Dollar", "cat": "fiat", "rate": 190.0, "rank": 121}, {"code": "CVE", "name": "Cape Verdean Escudo", "cat": "fiat", "rate": 100.4, "rank": 122}, {"code": "MRU", "name": "Mauritanian Ouguiya", "cat": "fiat", "rate": 39.8, "rank": 123}, {"code": "STN", "name": "Sao Tome Dobra", "cat": "fiat", "rate": 22.3, "rank": 124}, {"code": "SZL", "name": "Swazi Lilangeni", "cat": "fiat", "rate": 18.1, "rank": 125}, {"code": "LSL", "name": "Lesotho Loti", "cat": "fiat", "rate": 18.1, "rank": 126}, {"code": "THB", "name": "Thai Baht", "cat": "fiat", "rate": 34.4, "rank": 127}, {"code": "IDR", "name": "Indonesian Rupiah", "cat": "fiat", "rate": 15850.0, "rank": 128}, {"code": "MYR", "name": "Malaysian Ringgit", "cat": "fiat", "rate": 4.44, "rank": 129}, {"code": "PHP", "name": "Philippine Peso", "cat": "fiat", "rate": 58.6, "rank": 130}, {"code": "VND", "name": "Vietnamese Dong", "cat": "fiat", "rate": 25380.0, "rank": 131}, {"code": "TWD", "name": "New Taiwan Dollar", "cat": "fiat", "rate": 32.5, "rank": 132}, {"code": "MMK", "name": "Myanmar Kyat", "cat": "fiat", "rate": 2100.0, "rank": 133}, {"code": "KHR", "name": "Cambodian Riel", "cat": "fiat", "rate": 4050.0, "rank": 134}, {"code": "LAK", "name": "Laotian Kip", "cat": "fiat", "rate": 21900.0, "rank": 135}, {"code": "BND", "name": "Brunei Dollar", "cat": "fiat", "rate": 1.34, "rank": 136}, {"code": "MNT", "name": "Mongolian Tugrik", "cat": "fiat", "rate": 3410.0, "rank": 137}, {"code": "KPW", "name": "North Korean Won", "cat": "fiat", "rate": 900.0, "rank": 138}, {"code": "MOP", "name": "Macanese Pataca", "cat": "fiat", "rate": 8.01, "rank": 139}, {"code": "FJD", "name": "Fijian Dollar", "cat": "fiat", "rate": 2.27, "rank": 140}, {"code": "PGK", "name": "Papua New Guinean Kina", "cat": "fiat", "rate": 4.01, "rank": 141}, {"code": "SBD", "name": "Solomon Islands Dollar", "cat": "fiat", "rate": 8.48, "rank": 142}, {"code": "VUV", "name": "Vanuatu Vatu", "cat": "fiat", "rate": 120.5, "rank": 143}, {"code": "WST", "name": "Samoan Tala", "cat": "fiat", "rate": 2.78, "rank": 144}, {"code": "TOP", "name": "Tongan Paanga", "cat": "fiat", "rate": 2.36, "rank": 145}, {"code": "ISK", "name": "Icelandic Krona", "cat": "fiat", "rate": 138.0, "rank": 146}, {"code": "ALL", "name": "Albanian Lek", "cat": "fiat", "rate": 90.5, "rank": 147}, {"code": "BAM", "name": "Bosnia-Herzegovina Mark", "cat": "fiat", "rate": 1.78, "rank": 148}, {"code": "MKD", "name": "Macedonian Denar", "cat": "fiat", "rate": 56.0, "rank": 149}, {"code": "MDL", "name": "Moldovan Leu", "cat": "fiat", "rate": 18.2, "rank": 150}, {"code": "GIP", "name": "Gibraltar Pound", "cat": "fiat", "rate": 0.7624, "rank": 151}, {"code": "FKP", "name": "Falkland Islands Pound", "cat": "fiat", "rate": 0.7624, "rank": 152}, {"code": "SHP", "name": "Saint Helena Pound", "cat": "fiat", "rate": 0.7624, "rank": 153}, {"code": "ZWL", "name": "Zimbabwean Dollar", "cat": "fiat", "rate": 322.0, "rank": 154}, {"code": "XAU", "name": "Gold (Troy Ounce)", "cat": "metal", "rate": 0.00027657926761809933, "rank": 155}, {"code": "XAG", "name": "Silver (Troy Ounce)", "cat": "metal", "rate": 0.032051282051282055, "rank": 156}, {"code": "XPT", "name": "Platinum (Troy Ounce)", "cat": "metal", "rate": 0.0010416666666666667, "rank": 157}, {"code": "XPD", "name": "Palladium (Troy Ounce)", "cat": "metal", "rate": 0.0009900990099009901, "rank": 158}, {"code": "XDR", "name": "IMF Special Drawing Rights", "cat": "metal", "rate": 0.755, "rank": 159}, {"code": "BTC", "name": "Bitcoin", "cat": "crypto", "rate": 1.6466803582649524e-05, "rank": 160}, {"code": "ETH", "name": "Ethereum", "cat": "crypto", "rate": 0.0005878981172562796, "rank": 161}, {"code": "USDT", "name": "Tether", "cat": "crypto", "rate": 1.0, "rank": 162}, {"code": "BNB", "name": "BNB", "cat": "crypto", "rate": 0.001812217973577862, "rank": 163}, {"code": "SOL", "name": "Solana", "cat": "crypto", "rate": 0.014108352144469528, "rank": 164}, {"code": "USDC", "name": "USD Coin", "cat": "crypto", "rate": 1.0, "rank": 165}, {"code": "XRP", "name": "XRP", "cat": "crypto", "rate": 1.053740779768177, "rank": 166}, {"code": "DOGE", "name": "Dogecoin", "cat": "crypto", "rate": 6.0606060606060606, "rank": 167}, {"code": "TRX", "name": "TRON", "cat": "crypto", "rate": 3.293807641633729, "rank": 168}, {"code": "ADA", "name": "Cardano", "cat": "crypto", "rate": 2.380952380952381, "rank": 169}, {"code": "AVAX", "name": "Avalanche", "cat": "crypto", "rate": 0.05405405405405406, "rank": 170}, {"code": "SHIB", "name": "Shiba Inu", "cat": "crypto", "rate": 71428.57142857143, "rank": 171}, {"code": "TON", "name": "Toncoin", "cat": "crypto", "rate": 0.31746031746031744, "rank": 172}, {"code": "LINK", "name": "Chainlink", "cat": "crypto", "rate": 0.0847457627118644, "rank": 173}, {"code": "DOT", "name": "Polkadot", "cat": "crypto", "rate": 0.2173913043478261, "rank": 174}, {"code": "BCH", "name": "Bitcoin Cash", "cat": "crypto", "rate": 0.002898550724637681, "rank": 175}, {"code": "LTC", "name": "Litecoin", "cat": "crypto", "rate": 0.01282051282051282, "rank": 176}, {"code": "UNI", "name": "Uniswap", "cat": "crypto", "rate": 0.13513513513513511, "rank": 177}, {"code": "NEAR", "name": "NEAR Protocol", "cat": "crypto", "rate": 0.3125, "rank": 178}, {"code": "APT", "name": "Aptos", "cat": "crypto", "rate": 0.1724137931034483, "rank": 179}, {"code": "ICP", "name": "Internet Computer", "cat": "crypto", "rate": 0.1639344262295082, "rank": 180}, {"code": "XLM", "name": "Stellar", "cat": "crypto", "rate": 4.545454545454546, "rank": 181}, {"code": "ETC", "name": "Ethereum Classic", "cat": "crypto", "rate": 0.05813953488372093, "rank": 182}, {"code": "XMR", "name": "Monero", "cat": "crypto", "rate": 0.005813953488372093, "rank": 183}, {"code": "HBAR", "name": "Hedera", "cat": "crypto", "rate": 7.142857142857142, "rank": 184}, {"code": "FIL", "name": "Filecoin", "cat": "crypto", "rate": 0.2857142857142857, "rank": 185}, {"code": "ATOM", "name": "Cosmos", "cat": "crypto", "rate": 0.20833333333333334, "rank": 186}, {"code": "ARB", "name": "Arbitrum", "cat": "crypto", "rate": 1.923076923076923, "rank": 187}, {"code": "OP", "name": "Optimism", "cat": "crypto", "rate": 0.8695652173913044, "rank": 188}, {"code": "SUI", "name": "Sui", "cat": "crypto", "rate": 0.5128205128205129, "rank": 189}, {"code": "INJ", "name": "Injective", "cat": "crypto", "rate": 0.07042253521126761, "rank": 190}, {"code": "VET", "name": "VeChain", "cat": "crypto", "rate": 35.714285714285715, "rank": 191}, {"code": "MKR", "name": "Maker", "cat": "crypto", "rate": 0.0008064516129032258, "rank": 192}, {"code": "AAVE", "name": "Aave", "cat": "crypto", "rate": 0.006060606060606061, "rank": 193}, {"code": "GRT", "name": "The Graph", "cat": "crypto", "rate": 6.666666666666667, "rank": 194}, {"code": "ALGO", "name": "Algorand", "cat": "crypto", "rate": 5.555555555555555, "rank": 195}, {"code": "KAS", "name": "Kaspa", "cat": "crypto", "rate": 10.526315789473685, "rank": 196}, {"code": "TAO", "name": "Bittensor", "cat": "crypto", "rate": 0.0032258064516129032, "rank": 197}, {"code": "FET", "name": "Artificial Superintelligence", "cat": "crypto", "rate": 1.1764705882352942, "rank": 198}, {"code": "STX", "name": "Stacks", "cat": "crypto", "rate": 0.8, "rank": 199}, {"code": "IMX", "name": "Immutable", "cat": "crypto", "rate": 1.0526315789473684, "rank": 200}, {"code": "TIA", "name": "Celestia", "cat": "crypto", "rate": 0.2777777777777778, "rank": 201}, {"code": "SEI", "name": "Sei", "cat": "crypto", "rate": 3.125, "rank": 202}, {"code": "PEPE", "name": "Pepe", "cat": "crypto", "rate": 105263.15789473684, "rank": 203}, {"code": "WIF", "name": "dogwifhat", "cat": "crypto", "rate": 0.6896551724137931, "rank": 204}, {"code": "BONK", "name": "Bonk", "cat": "crypto", "rate": 55555.555555555555, "rank": 205}, {"code": "FLOKI", "name": "Floki", "cat": "crypto", "rate": 9090.90909090909, "rank": 206}, {"code": "RNDR", "name": "Render", "cat": "crypto", "rate": 0.20833333333333334, "rank": 207}, {"code": "THETA", "name": "Theta Network", "cat": "crypto", "rate": 0.7407407407407407, "rank": 208}, {"code": "FTM", "name": "Fantom", "cat": "crypto", "rate": 1.8518518518518516, "rank": 209}, {"code": "RUNE", "name": "THORChain", "cat": "crypto", "rate": 0.2631578947368421, "rank": 210}, {"code": "EGLD", "name": "MultiversX", "cat": "crypto", "rate": 0.04081632653061224, "rank": 211}, {"code": "FLOW", "name": "Flow", "cat": "crypto", "rate": 1.8181818181818181, "rank": 212}, {"code": "XTZ", "name": "Tezos", "cat": "crypto", "rate": 1.3888888888888888, "rank": 213}, {"code": "EOS", "name": "EOS", "cat": "crypto", "rate": 1.7241379310344829, "rank": 214}, {"code": "AXS", "name": "Axie Infinity", "cat": "crypto", "rate": 0.2040816326530612, "rank": 215}, {"code": "SAND", "name": "The Sandbox", "cat": "crypto", "rate": 2.941176470588235, "rank": 216}, {"code": "MANA", "name": "Decentraland", "cat": "crypto", "rate": 3.125, "rank": 217}, {"code": "CHZ", "name": "Chiliz", "cat": "crypto", "rate": 14.705882352941176, "rank": 218}, {"code": "GALA", "name": "Gala", "cat": "crypto", "rate": 41.666666666666664, "rank": 219}, {"code": "KCS", "name": "KuCoin Token", "cat": "crypto", "rate": 0.1020408163265306, "rank": 220}, {"code": "OKB", "name": "OKB", "cat": "crypto", "rate": 0.023809523809523808, "rank": 221}, {"code": "CRO", "name": "Cronos", "cat": "crypto", "rate": 10.526315789473685, "rank": 222}, {"code": "QNT", "name": "Quant", "cat": "crypto", "rate": 0.013513513513513514, "rank": 223}, {"code": "SNX", "name": "Synthetix", "cat": "crypto", "rate": 0.6060606060606061, "rank": 224}, {"code": "CRV", "name": "Curve DAO", "cat": "crypto", "rate": 2.6315789473684212, "rank": 225}, {"code": "LDO", "name": "Lido DAO", "cat": "crypto", "rate": 0.8, "rank": 226}, {"code": "COMP", "name": "Compound", "cat": "crypto", "rate": 0.020833333333333332, "rank": 227}, {"code": "ENS", "name": "Ethereum Name Service", "cat": "crypto", "rate": 0.05128205128205128, "rank": 228}, {"code": "CAKE", "name": "PancakeSwap", "cat": "crypto", "rate": 0.5128205128205129, "rank": 229}, {"code": "1INCH", "name": "1inch", "cat": "crypto", "rate": 3.571428571428571, "rank": 230}, {"code": "DYDX", "name": "dYdX", "cat": "crypto", "rate": 0.8695652173913044, "rank": 231}, {"code": "GMX", "name": "GMX", "cat": "crypto", "rate": 0.045454545454545456, "rank": 232}, {"code": "SUSHI", "name": "SushiSwap", "cat": "crypto", "rate": 1.3333333333333333, "rank": 233}, {"code": "YFI", "name": "yearn.finance", "cat": "crypto", "rate": 0.0001923076923076923, "rank": 234}, {"code": "ZEC", "name": "Zcash", "cat": "crypto", "rate": 0.029411764705882353, "rank": 235}, {"code": "DASH", "name": "Dash", "cat": "crypto", "rate": 0.038461538461538464, "rank": 236}, {"code": "NEO", "name": "Neo", "cat": "crypto", "rate": 0.09523809523809523, "rank": 237}, {"code": "IOTA", "name": "IOTA", "cat": "crypto", "rate": 6.25, "rank": 238}, {"code": "KAVA", "name": "Kava", "cat": "crypto", "rate": 2.380952380952381, "rank": 239}, {"code": "ROSE", "name": "Oasis Network", "cat": "crypto", "rate": 13.88888888888889, "rank": 240}, {"code": "ZIL", "name": "Zilliqa", "cat": "crypto", "rate": 62.5, "rank": 241}, {"code": "QTUM", "name": "Qtum", "cat": "crypto", "rate": 0.4166666666666667, "rank": 242}, {"code": "ONT", "name": "Ontology", "cat": "crypto", "rate": 5.555555555555555, "rank": 243}, {"code": "ICX", "name": "ICON", "cat": "crypto", "rate": 6.666666666666667, "rank": 244}, {"code": "WAVES", "name": "Waves", "cat": "crypto", "rate": 0.7692307692307692, "rank": 245}, {"code": "SC", "name": "Siacoin", "cat": "crypto", "rate": 222.22222222222223, "rank": 246}, {"code": "DGB", "name": "DigiByte", "cat": "crypto", "rate": 133.33333333333334, "rank": 247}, {"code": "RVN", "name": "Ravencoin", "cat": "crypto", "rate": 55.55555555555556, "rank": 248}, {"code": "BTT", "name": "BitTorrent", "cat": "crypto", "rate": 1111111.1111111112, "rank": 249}, {"code": "HOT", "name": "Holo", "cat": "crypto", "rate": 625.0, "rank": 250}, {"code": "BAT", "name": "Basic Attention Token", "cat": "crypto", "rate": 5.2631578947368425, "rank": 251}, {"code": "ZRX", "name": "0x Protocol", "cat": "crypto", "rate": 2.941176470588235, "rank": 252}, {"code": "ANKR", "name": "Ankr", "cat": "crypto", "rate": 35.714285714285715, "rank": 253}, {"code": "CELO", "name": "Celo", "cat": "crypto", "rate": 1.923076923076923, "rank": 254}, {"code": "ONE", "name": "Harmony", "cat": "crypto", "rate": 71.42857142857143, "rank": 255}, {"code": "KSM", "name": "Kusama", "cat": "crypto", "rate": 0.045454545454545456, "rank": 256}, {"code": "MINA", "name": "Mina", "cat": "crypto", "rate": 2.0833333333333335, "rank": 257}, {"code": "ASTR", "name": "Astar", "cat": "crypto", "rate": 18.181818181818183, "rank": 258}, {"code": "CFX", "name": "Conflux", "cat": "crypto", "rate": 7.142857142857142, "rank": 259}, {"code": "JUP", "name": "Jupiter", "cat": "crypto", "rate": 1.4705882352941175, "rank": 260}, {"code": "PYTH", "name": "Pyth Network", "cat": "crypto", "rate": 3.4482758620689657, "rank": 261}, {"code": "WLD", "name": "Worldcoin", "cat": "crypto", "rate": 0.5405405405405405, "rank": 262}, {"code": "STRK", "name": "Starknet", "cat": "crypto", "rate": 2.380952380952381, "rank": 263}, {"code": "BLUR", "name": "Blur", "cat": "crypto", "rate": 4.545454545454546, "rank": 264}, {"code": "PENDLE", "name": "Pendle", "cat": "crypto", "rate": 0.29411764705882354, "rank": 265}, {"code": "ENA", "name": "Ethena", "cat": "crypto", "rate": 2.0833333333333335, "rank": 266}, {"code": "ONDO", "name": "Ondo", "cat": "crypto", "rate": 1.2195121951219512, "rank": 267}, {"code": "DAI", "name": "Dai", "cat": "crypto", "rate": 1.0, "rank": 268}, {"code": "FDUSD", "name": "First Digital USD", "cat": "crypto", "rate": 1.0, "rank": 269}, {"code": "TUSD", "name": "TrueUSD", "cat": "crypto", "rate": 1.0, "rank": 270}, {"code": "USDD", "name": "USDD", "cat": "crypto", "rate": 1.0, "rank": 271}, {"code": "PYUSD", "name": "PayPal USD", "cat": "crypto", "rate": 1.0, "rank": 272}, {"code": "WBTC", "name": "Wrapped Bitcoin", "cat": "crypto", "rate": 1.6474464579901152e-05, "rank": 273}, {"code": "WETH", "name": "Wrapped Ether", "cat": "crypto", "rate": 0.000588235294117647, "rank": 274}, {"code": "STETH", "name": "Lido Staked ETH", "cat": "crypto", "rate": 0.0005885815185403178, "rank": 275}, {"code": "JASMY", "name": "JASMY Token", "cat": "crypto", "rate": 1.0, "rank": 276, "unverified": true}, {"code": "GNO", "name": "GNO Token", "cat": "crypto", "rate": 1.0, "rank": 277, "unverified": true}, {"code": "XDC", "name": "XDC Token", "cat": "crypto", "rate": 1.0, "rank": 278, "unverified": true}, {"code": "CORE", "name": "CORE Token", "cat": "crypto", "rate": 1.0, "rank": 279, "unverified": true}, {"code": "BEAM", "name": "BEAM Token", "cat": "crypto", "rate": 1.0, "rank": 280, "unverified": true}, {"code": "AXL", "name": "AXL Token", "cat": "crypto", "rate": 1.0, "rank": 281, "unverified": true}, {"code": "CKB", "name": "CKB Token", "cat": "crypto", "rate": 1.0, "rank": 282, "unverified": true}, {"code": "ORDI", "name": "ORDI Token", "cat": "crypto", "rate": 1.0, "rank": 283, "unverified": true}, {"code": "SATS", "name": "SATS Token", "cat": "crypto", "rate": 1.0, "rank": 284, "unverified": true}, {"code": "RATS", "name": "RATS Token", "cat": "crypto", "rate": 1.0, "rank": 285, "unverified": true}, {"code": "MANTA", "name": "MANTA Token", "cat": "crypto", "rate": 1.0, "rank": 286, "unverified": true}, {"code": "ALT", "name": "ALT Token", "cat": "crypto", "rate": 1.0, "rank": 287, "unverified": true}, {"code": "DYM", "name": "DYM Token", "cat": "crypto", "rate": 1.0, "rank": 288, "unverified": true}, {"code": "PIXEL", "name": "PIXEL Token", "cat": "crypto", "rate": 1.0, "rank": 289, "unverified": true}, {"code": "PORTAL", "name": "PORTAL Token", "cat": "crypto", "rate": 1.0, "rank": 290, "unverified": true}, {"code": "STRX", "name": "STRX Token", "cat": "crypto", "rate": 1.0, "rank": 291, "unverified": true}, {"code": "XAI", "name": "XAI Token", "cat": "crypto", "rate": 1.0, "rank": 292, "unverified": true}, {"code": "ACE", "name": "ACE Token", "cat": "crypto", "rate": 1.0, "rank": 293, "unverified": true}, {"code": "NFP", "name": "NFP Token", "cat": "crypto", "rate": 1.0, "rank": 294, "unverified": true}, {"code": "AI", "name": "AI Token", "cat": "crypto", "rate": 1.0, "rank": 295, "unverified": true}, {"code": "JTO", "name": "JTO Token", "cat": "crypto", "rate": 1.0, "rank": 296, "unverified": true}, {"code": "MEME", "name": "MEME Token", "cat": "crypto", "rate": 1.0, "rank": 297, "unverified": true}, {"code": "TNSR", "name": "TNSR Token", "cat": "crypto", "rate": 1.0, "rank": 298, "unverified": true}, {"code": "W", "name": "W Token", "cat": "crypto", "rate": 1.0, "rank": 299, "unverified": true}, {"code": "ZEUS", "name": "ZEUS Token", "cat": "crypto", "rate": 1.0, "rank": 300, "unverified": true}, {"code": "KMNO", "name": "KMNO Token", "cat": "crypto", "rate": 1.0, "rank": 301, "unverified": true}, {"code": "DRIFT", "name": "DRIFT Token", "cat": "crypto", "rate": 1.0, "rank": 302, "unverified": true}, {"code": "IO", "name": "IO Token", "cat": "crypto", "rate": 1.0, "rank": 303, "unverified": true}, {"code": "ZK", "name": "ZK Token", "cat": "crypto", "rate": 1.0, "rank": 304, "unverified": true}, {"code": "ZRO", "name": "ZRO Token", "cat": "crypto", "rate": 1.0, "rank": 305, "unverified": true}, {"code": "BLAST", "name": "BLAST Token", "cat": "crypto", "rate": 1.0, "rank": 306, "unverified": true}, {"code": "LISTA", "name": "LISTA Token", "cat": "crypto", "rate": 1.0, "rank": 307, "unverified": true}, {"code": "NOT", "name": "NOT Token", "cat": "crypto", "rate": 1.0, "rank": 308, "unverified": true}, {"code": "DOGS", "name": "DOGS Token", "cat": "crypto", "rate": 1.0, "rank": 309, "unverified": true}, {"code": "HMSTR", "name": "HMSTR Token", "cat": "crypto", "rate": 1.0, "rank": 310, "unverified": true}, {"code": "CATI", "name": "CATI Token", "cat": "crypto", "rate": 1.0, "rank": 311, "unverified": true}, {"code": "EIGEN", "name": "EIGEN Token", "cat": "crypto", "rate": 1.0, "rank": 312, "unverified": true}, {"code": "NEIRO", "name": "NEIRO Token", "cat": "crypto", "rate": 1.0, "rank": 313, "unverified": true}, {"code": "PNUT", "name": "PNUT Token", "cat": "crypto", "rate": 1.0, "rank": 314, "unverified": true}, {"code": "ACT", "name": "ACT Token", "cat": "crypto", "rate": 1.0, "rank": 315, "unverified": true}, {"code": "GOAT", "name": "GOAT Token", "cat": "crypto", "rate": 1.0, "rank": 316, "unverified": true}, {"code": "POPCAT", "name": "POPCAT Token", "cat": "crypto", "rate": 1.0, "rank": 317, "unverified": true}, {"code": "MEW", "name": "MEW Token", "cat": "crypto", "rate": 1.0, "rank": 318, "unverified": true}, {"code": "BRETT", "name": "BRETT Token", "cat": "crypto", "rate": 1.0, "rank": 319, "unverified": true}, {"code": "MOG", "name": "MOG Token", "cat": "crypto", "rate": 1.0, "rank": 320, "unverified": true}, {"code": "TURBO", "name": "TURBO Token", "cat": "crypto", "rate": 1.0, "rank": 321, "unverified": true}, {"code": "SPX", "name": "SPX Token", "cat": "crypto", "rate": 1.0, "rank": 322, "unverified": true}, {"code": "GIGA", "name": "GIGA Token", "cat": "crypto", "rate": 1.0, "rank": 323, "unverified": true}, {"code": "BOME", "name": "BOME Token", "cat": "crypto", "rate": 1.0, "rank": 324, "unverified": true}, {"code": "SLERF", "name": "SLERF Token", "cat": "crypto", "rate": 1.0, "rank": 325, "unverified": true}, {"code": "MYRO", "name": "MYRO Token", "cat": "crypto", "rate": 1.0, "rank": 326, "unverified": true}, {"code": "PONKE", "name": "PONKE Token", "cat": "crypto", "rate": 1.0, "rank": 327, "unverified": true}, {"code": "MICHI", "name": "MICHI Token", "cat": "crypto", "rate": 1.0, "rank": 328, "unverified": true}, {"code": "AERO", "name": "AERO Token", "cat": "crypto", "rate": 1.0, "rank": 329, "unverified": true}, {"code": "VELO", "name": "VELO Token", "cat": "crypto", "rate": 1.0, "rank": 330, "unverified": true}, {"code": "DEGEN", "name": "DEGEN Token", "cat": "crypto", "rate": 1.0, "rank": 331, "unverified": true}, {"code": "TOSHI", "name": "TOSHI Token", "cat": "crypto", "rate": 1.0, "rank": 332, "unverified": true}, {"code": "MORPHO", "name": "MORPHO Token", "cat": "crypto", "rate": 1.0, "rank": 333, "unverified": true}, {"code": "USUAL", "name": "USUAL Token", "cat": "crypto", "rate": 1.0, "rank": 334, "unverified": true}, {"code": "PENGU", "name": "PENGU Token", "cat": "crypto", "rate": 1.0, "rank": 335, "unverified": true}, {"code": "MOVE", "name": "MOVE Token", "cat": "crypto", "rate": 1.0, "rank": 336, "unverified": true}, {"code": "ME", "name": "ME Token", "cat": "crypto", "rate": 1.0, "rank": 337, "unverified": true}, {"code": "VANA", "name": "VANA Token", "cat": "crypto", "rate": 1.0, "rank": 338, "unverified": true}, {"code": "BIO", "name": "BIO Token", "cat": "crypto", "rate": 1.0, "rank": 339, "unverified": true}, {"code": "USDE", "name": "USDE Token", "cat": "crypto", "rate": 1.0, "rank": 340, "unverified": true}, {"code": "SUSDE", "name": "SUSDE Token", "cat": "crypto", "rate": 1.0, "rank": 341, "unverified": true}, {"code": "WEETH", "name": "WEETH Token", "cat": "crypto", "rate": 1.0, "rank": 342, "unverified": true}, {"code": "EZETH", "name": "EZETH Token", "cat": "crypto", "rate": 1.0, "rank": 343, "unverified": true}, {"code": "RSETH", "name": "RSETH Token", "cat": "crypto", "rate": 1.0, "rank": 344, "unverified": true}, {"code": "PUFFER", "name": "PUFFER Token", "cat": "crypto", "rate": 1.0, "rank": 345, "unverified": true}, {"code": "ETHFI", "name": "ETHFI Token", "cat": "crypto", "rate": 1.0, "rank": 346, "unverified": true}, {"code": "REZ", "name": "REZ Token", "cat": "crypto", "rate": 1.0, "rank": 347, "unverified": true}, {"code": "BB", "name": "BB Token", "cat": "crypto", "rate": 1.0, "rank": 348, "unverified": true}, {"code": "OMNI", "name": "OMNI Token", "cat": "crypto", "rate": 1.0, "rank": 349, "unverified": true}, {"code": "SAGA", "name": "SAGA Token", "cat": "crypto", "rate": 1.0, "rank": 350, "unverified": true}, {"code": "AKT", "name": "AKT Token", "cat": "crypto", "rate": 1.0, "rank": 351, "unverified": true}, {"code": "GLM", "name": "GLM Token", "cat": "crypto", "rate": 1.0, "rank": 352, "unverified": true}, {"code": "FLUX", "name": "FLUX Token", "cat": "crypto", "rate": 1.0, "rank": 353, "unverified": true}, {"code": "PHA", "name": "PHA Token", "cat": "crypto", "rate": 1.0, "rank": 354, "unverified": true}, {"code": "RLC", "name": "RLC Token", "cat": "crypto", "rate": 1.0, "rank": 355, "unverified": true}, {"code": "NMR", "name": "NMR Token", "cat": "crypto", "rate": 1.0, "rank": 356, "unverified": true}, {"code": "OCEAN", "name": "OCEAN Token", "cat": "crypto", "rate": 1.0, "rank": 357, "unverified": true}, {"code": "AGIX", "name": "AGIX Token", "cat": "crypto", "rate": 1.0, "rank": 358, "unverified": true}, {"code": "CUDOS", "name": "CUDOS Token", "cat": "crypto", "rate": 1.0, "rank": 359, "unverified": true}, {"code": "NOS", "name": "NOS Token", "cat": "crypto", "rate": 1.0, "rank": 360, "unverified": true}, {"code": "OLAS", "name": "OLAS Token", "cat": "crypto", "rate": 1.0, "rank": 361, "unverified": true}, {"code": "PRIME", "name": "PRIME Token", "cat": "crypto", "rate": 1.0, "rank": 362, "unverified": true}, {"code": "ILV", "name": "ILV Token", "cat": "crypto", "rate": 1.0, "rank": 363, "unverified": true}, {"code": "GODS", "name": "GODS Token", "cat": "crypto", "rate": 1.0, "rank": 364, "unverified": true}, {"code": "YGG", "name": "YGG Token", "cat": "crypto", "rate": 1.0, "rank": 365, "unverified": true}, {"code": "SUPER", "name": "SUPER Token", "cat": "crypto", "rate": 1.0, "rank": 366, "unverified": true}, {"code": "MAGIC", "name": "MAGIC Token", "cat": "crypto", "rate": 1.0, "rank": 367, "unverified": true}, {"code": "MAVIA", "name": "MAVIA Token", "cat": "crypto", "rate": 1.0, "rank": 368, "unverified": true}, {"code": "BIGTIME", "name": "BIGTIME Token", "cat": "crypto", "rate": 1.0, "rank": 369, "unverified": true}, {"code": "SHRAP", "name": "SHRAP Token", "cat": "crypto", "rate": 1.0, "rank": 370, "unverified": true}, {"code": "BEAMX", "name": "BEAMX Token", "cat": "crypto", "rate": 1.0, "rank": 371, "unverified": true}, {"code": "VANRY", "name": "VANRY Token", "cat": "crypto", "rate": 1.0, "rank": 372, "unverified": true}, {"code": "XPLA", "name": "XPLA Token", "cat": "crypto", "rate": 1.0, "rank": 373, "unverified": true}, {"code": "WAXP", "name": "WAXP Token", "cat": "crypto", "rate": 1.0, "rank": 374, "unverified": true}, {"code": "ENJ", "name": "ENJ Token", "cat": "crypto", "rate": 1.0, "rank": 375, "unverified": true}, {"code": "AUDIO", "name": "AUDIO Token", "cat": "crypto", "rate": 1.0, "rank": 376, "unverified": true}, {"code": "LPT", "name": "LPT Token", "cat": "crypto", "rate": 1.0, "rank": 377, "unverified": true}, {"code": "AR", "name": "AR Token", "cat": "crypto", "rate": 1.0, "rank": 378, "unverified": true}, {"code": "STORJ", "name": "STORJ Token", "cat": "crypto", "rate": 1.0, "rank": 379, "unverified": true}, {"code": "SIA", "name": "SIA Token", "cat": "crypto", "rate": 1.0, "rank": 380, "unverified": true}, {"code": "BZZ", "name": "BZZ Token", "cat": "crypto", "rate": 1.0, "rank": 381, "unverified": true}, {"code": "POKT", "name": "POKT Token", "cat": "crypto", "rate": 1.0, "rank": 382, "unverified": true}, {"code": "API3", "name": "API3 Token", "cat": "crypto", "rate": 1.0, "rank": 383, "unverified": true}, {"code": "BAND", "name": "BAND Token", "cat": "crypto", "rate": 1.0, "rank": 384, "unverified": true}, {"code": "TRB", "name": "TRB Token", "cat": "crypto", "rate": 1.0, "rank": 385, "unverified": true}, {"code": "DIA", "name": "DIA Token", "cat": "crypto", "rate": 1.0, "rank": 386, "unverified": true}, {"code": "UMA", "name": "UMA Token", "cat": "crypto", "rate": 1.0, "rank": 387, "unverified": true}, {"code": "PYR", "name": "PYR Token", "cat": "crypto", "rate": 1.0, "rank": 388, "unverified": true}, {"code": "SFUND", "name": "SFUND Token", "cat": "crypto", "rate": 1.0, "rank": 389, "unverified": true}, {"code": "DAO", "name": "DAO Token", "cat": "crypto", "rate": 1.0, "rank": 390, "unverified": true}, {"code": "POLS", "name": "POLS Token", "cat": "crypto", "rate": 1.0, "rank": 391, "unverified": true}, {"code": "IDEX", "name": "IDEX Token", "cat": "crypto", "rate": 1.0, "rank": 392, "unverified": true}, {"code": "PERP", "name": "PERP Token", "cat": "crypto", "rate": 1.0, "rank": 393, "unverified": true}, {"code": "SNT", "name": "SNT Token", "cat": "crypto", "rate": 1.0, "rank": 394, "unverified": true}, {"code": "CVC", "name": "CVC Token", "cat": "crypto", "rate": 1.0, "rank": 395, "unverified": true}, {"code": "REQ", "name": "REQ Token", "cat": "crypto", "rate": 1.0, "rank": 396, "unverified": true}, {"code": "RLY", "name": "RLY Token", "cat": "crypto", "rate": 1.0, "rank": 397, "unverified": true}, {"code": "BADGER", "name": "BADGER Token", "cat": "crypto", "rate": 1.0, "rank": 398, "unverified": true}, {"code": "BNT", "name": "BNT Token", "cat": "crypto", "rate": 1.0, "rank": 399, "unverified": true}, {"code": "BAL", "name": "BAL Token", "cat": "crypto", "rate": 1.0, "rank": 400, "unverified": true}, {"code": "KNC", "name": "KNC Token", "cat": "crypto", "rate": 1.0, "rank": 401, "unverified": true}, {"code": "LRC", "name": "LRC Token", "cat": "crypto", "rate": 1.0, "rank": 402, "unverified": true}, {"code": "METIS", "name": "METIS Token", "cat": "crypto", "rate": 1.0, "rank": 403, "unverified": true}, {"code": "MODE", "name": "MODE Token", "cat": "crypto", "rate": 1.0, "rank": 404, "unverified": true}, {"code": "SCROLL", "name": "SCROLL Token", "cat": "crypto", "rate": 1.0, "rank": 405, "unverified": true}, {"code": "LINEA", "name": "LINEA Token", "cat": "crypto", "rate": 1.0, "rank": 406, "unverified": true}, {"code": "TAIKO", "name": "TAIKO Token", "cat": "crypto", "rate": 1.0, "rank": 407, "unverified": true}, {"code": "ZETA", "name": "ZETA Token", "cat": "crypto", "rate": 1.0, "rank": 408, "unverified": true}, {"code": "OM", "name": "OM Token", "cat": "crypto", "rate": 1.0, "rank": 409, "unverified": true}, {"code": "POLYX", "name": "POLYX Token", "cat": "crypto", "rate": 1.0, "rank": 410, "unverified": true}, {"code": "CFG", "name": "CFG Token", "cat": "crypto", "rate": 1.0, "rank": 411, "unverified": true}, {"code": "TRU", "name": "TRU Token", "cat": "crypto", "rate": 1.0, "rank": 412, "unverified": true}, {"code": "MPL", "name": "MPL Token", "cat": "crypto", "rate": 1.0, "rank": 413, "unverified": true}, {"code": "GFI", "name": "GFI Token", "cat": "crypto", "rate": 1.0, "rank": 414, "unverified": true}, {"code": "CPOOL", "name": "CPOOL Token", "cat": "crypto", "rate": 1.0, "rank": 415, "unverified": true}, {"code": "RIO", "name": "RIO Token", "cat": "crypto", "rate": 1.0, "rank": 416, "unverified": true}, {"code": "PRO", "name": "PRO Token", "cat": "crypto", "rate": 1.0, "rank": 417, "unverified": true}, {"code": "LCX", "name": "LCX Token", "cat": "crypto", "rate": 1.0, "rank": 418, "unverified": true}, {"code": "NXRA", "name": "NXRA Token", "cat": "crypto", "rate": 1.0, "rank": 419, "unverified": true}, {"code": "DUSK", "name": "DUSK Token", "cat": "crypto", "rate": 1.0, "rank": 420, "unverified": true}, {"code": "COTI", "name": "COTI Token", "cat": "crypto", "rate": 1.0, "rank": 421, "unverified": true}, {"code": "CHR", "name": "CHR Token", "cat": "crypto", "rate": 1.0, "rank": 422, "unverified": true}, {"code": "CTSI", "name": "CTSI Token", "cat": "crypto", "rate": 1.0, "rank": 423, "unverified": true}, {"code": "CELR", "name": "CELR Token", "cat": "crypto", "rate": 1.0, "rank": 424, "unverified": true}, {"code": "SKL", "name": "SKL Token", "cat": "crypto", "rate": 1.0, "rank": 425, "unverified": true}, {"code": "SYS", "name": "SYS Token", "cat": "crypto", "rate": 1.0, "rank": 426, "unverified": true}, {"code": "ZEN", "name": "ZEN Token", "cat": "crypto", "rate": 1.0, "rank": 427, "unverified": true}, {"code": "DCR", "name": "DCR Token", "cat": "crypto", "rate": 1.0, "rank": 428, "unverified": true}, {"code": "DGD", "name": "DGD Token", "cat": "crypto", "rate": 1.0, "rank": 429, "unverified": true}, {"code": "XVG", "name": "XVG Token", "cat": "crypto", "rate": 1.0, "rank": 430, "unverified": true}, {"code": "VTC", "name": "VTC Token", "cat": "crypto", "rate": 1.0, "rank": 431, "unverified": true}, {"code": "GRS", "name": "GRS Token", "cat": "crypto", "rate": 1.0, "rank": 432, "unverified": true}, {"code": "MONA", "name": "MONA Token", "cat": "crypto", "rate": 1.0, "rank": 433, "unverified": true}, {"code": "PIVX", "name": "PIVX Token", "cat": "crypto", "rate": 1.0, "rank": 434, "unverified": true}, {"code": "NAV", "name": "NAV Token", "cat": "crypto", "rate": 1.0, "rank": 435, "unverified": true}, {"code": "RDD", "name": "RDD Token", "cat": "crypto", "rate": 1.0, "rank": 436, "unverified": true}, {"code": "EMC2", "name": "EMC2 Token", "cat": "crypto", "rate": 1.0, "rank": 437, "unverified": true}, {"code": "POT", "name": "POT Token", "cat": "crypto", "rate": 1.0, "rank": 438, "unverified": true}, {"code": "NXT", "name": "NXT Token", "cat": "crypto", "rate": 1.0, "rank": 439, "unverified": true}, {"code": "ARDR", "name": "ARDR Token", "cat": "crypto", "rate": 1.0, "rank": 440, "unverified": true}, {"code": "IGNIS", "name": "IGNIS Token", "cat": "crypto", "rate": 1.0, "rank": 441, "unverified": true}, {"code": "BURST", "name": "BURST Token", "cat": "crypto", "rate": 1.0, "rank": 442, "unverified": true}, {"code": "XEM", "name": "XEM Token", "cat": "crypto", "rate": 1.0, "rank": 443, "unverified": true}, {"code": "XYM", "name": "XYM Token", "cat": "crypto", "rate": 1.0, "rank": 444, "unverified": true}, {"code": "LSK", "name": "LSK Token", "cat": "crypto", "rate": 1.0, "rank": 445, "unverified": true}, {"code": "ARK", "name": "ARK Token", "cat": "crypto", "rate": 1.0, "rank": 446, "unverified": true}, {"code": "STRAT", "name": "STRAT Token", "cat": "crypto", "rate": 1.0, "rank": 447, "unverified": true}, {"code": "STEEM", "name": "STEEM Token", "cat": "crypto", "rate": 1.0, "rank": 448, "unverified": true}, {"code": "HIVE", "name": "HIVE Token", "cat": "crypto", "rate": 1.0, "rank": 449, "unverified": true}, {"code": "BTS", "name": "BTS Token", "cat": "crypto", "rate": 1.0, "rank": 450, "unverified": true}, {"code": "KMD", "name": "KMD Token", "cat": "crypto", "rate": 1.0, "rank": 451, "unverified": true}, {"code": "ZCL", "name": "ZCL Token", "cat": "crypto", "rate": 1.0, "rank": 452, "unverified": true}, {"code": "BTG", "name": "BTG Token", "cat": "crypto", "rate": 1.0, "rank": 453, "unverified": true}, {"code": "BCD", "name": "BCD Token", "cat": "crypto", "rate": 1.0, "rank": 454, "unverified": true}, {"code": "SBTC", "name": "SBTC Token", "cat": "crypto", "rate": 1.0, "rank": 455, "unverified": true}, {"code": "BCX", "name": "BCX Token", "cat": "crypto", "rate": 1.0, "rank": 456, "unverified": true}, {"code": "B2X", "name": "B2X Token", "cat": "crypto", "rate": 1.0, "rank": 457, "unverified": true}, {"code": "BTCP", "name": "BTCP Token", "cat": "crypto", "rate": 1.0, "rank": 458, "unverified": true}, {"code": "ANON", "name": "ANON Token", "cat": "crypto", "rate": 1.0, "rank": 459, "unverified": true}, {"code": "KDA", "name": "KDA Token", "cat": "crypto", "rate": 1.0, "rank": 460, "unverified": true}, {"code": "ERG", "name": "ERG Token", "cat": "crypto", "rate": 1.0, "rank": 461, "unverified": true}, {"code": "NEOX", "name": "NEOX Token", "cat": "crypto", "rate": 1.0, "rank": 462, "unverified": true}, {"code": "NEXA", "name": "NEXA Token", "cat": "crypto", "rate": 1.0, "rank": 463, "unverified": true}, {"code": "RXD", "name": "RXD Token", "cat": "crypto", "rate": 1.0, "rank": 464, "unverified": true}, {"code": "ALPH", "name": "ALPH Token", "cat": "crypto", "rate": 1.0, "rank": 465, "unverified": true}, {"code": "DNX", "name": "DNX Token", "cat": "crypto", "rate": 1.0, "rank": 466, "unverified": true}, {"code": "ZEPH", "name": "ZEPH Token", "cat": "crypto", "rate": 1.0, "rank": 467, "unverified": true}, {"code": "QUBIC", "name": "QUBIC Token", "cat": "crypto", "rate": 1.0, "rank": 468, "unverified": true}, {"code": "OCTA", "name": "OCTA Token", "cat": "crypto", "rate": 1.0, "rank": 469, "unverified": true}, {"code": "CLORE", "name": "CLORE Token", "cat": "crypto", "rate": 1.0, "rank": 470, "unverified": true}, {"code": "VRSC", "name": "VRSC Token", "cat": "crypto", "rate": 1.0, "rank": 471, "unverified": true}, {"code": "XNA", "name": "XNA Token", "cat": "crypto", "rate": 1.0, "rank": 472, "unverified": true}, {"code": "DERO", "name": "DERO Token", "cat": "crypto", "rate": 1.0, "rank": 473, "unverified": true}, {"code": "RTM", "name": "RTM Token", "cat": "crypto", "rate": 1.0, "rank": 474, "unverified": true}, {"code": "PEXA", "name": "PEXA Token", "cat": "crypto", "rate": 1.0, "rank": 475, "unverified": true}, {"code": "MEWC", "name": "MEWC Token", "cat": "crypto", "rate": 1.0, "rank": 476, "unverified": true}, {"code": "AIPG", "name": "AIPG Token", "cat": "crypto", "rate": 1.0, "rank": 477, "unverified": true}, {"code": "GRAM", "name": "GRAM Token", "cat": "crypto", "rate": 1.0, "rank": 478, "unverified": true}, {"code": "JET", "name": "JET Token", "cat": "crypto", "rate": 1.0, "rank": 479, "unverified": true}, {"code": "STARS", "name": "STARS Token", "cat": "crypto", "rate": 1.0, "rank": 480, "unverified": true}, {"code": "OSMO", "name": "OSMO Token", "cat": "crypto", "rate": 1.0, "rank": 481, "unverified": true}, {"code": "JUNO", "name": "JUNO Token", "cat": "crypto", "rate": 1.0, "rank": 482, "unverified": true}, {"code": "EVMOS", "name": "EVMOS Token", "cat": "crypto", "rate": 1.0, "rank": 483, "unverified": true}, {"code": "KUJI", "name": "KUJI Token", "cat": "crypto", "rate": 1.0, "rank": 484, "unverified": true}, {"code": "SCRT", "name": "SCRT Token", "cat": "crypto", "rate": 1.0, "rank": 485, "unverified": true}, {"code": "AKASH", "name": "AKASH Token", "cat": "crypto", "rate": 1.0, "rank": 486, "unverified": true}, {"code": "REGEN", "name": "REGEN Token", "cat": "crypto", "rate": 1.0, "rank": 487, "unverified": true}, {"code": "DVPN", "name": "DVPN Token", "cat": "crypto", "rate": 1.0, "rank": 488, "unverified": true}, {"code": "ROWAN", "name": "ROWAN Token", "cat": "crypto", "rate": 1.0, "rank": 489, "unverified": true}, {"code": "CMDX", "name": "CMDX Token", "cat": "crypto", "rate": 1.0, "rank": 490, "unverified": true}, {"code": "NOM", "name": "NOM Token", "cat": "crypto", "rate": 1.0, "rank": 491, "unverified": true}, {"code": "STRD", "name": "STRD Token", "cat": "crypto", "rate": 1.0, "rank": 492, "unverified": true}, {"code": "NTRN", "name": "NTRN Token", "cat": "crypto", "rate": 1.0, "rank": 493, "unverified": true}, {"code": "DIMENSION", "name": "DIMENSION Token", "cat": "crypto", "rate": 1.0, "rank": 494, "unverified": true}, {"code": "MANTRA", "name": "MANTRA Token", "cat": "crypto", "rate": 1.0, "rank": 495, "unverified": true}, {"code": "COREUM", "name": "COREUM Token", "cat": "crypto", "rate": 1.0, "rank": 496, "unverified": true}, {"code": "XPRT", "name": "XPRT Token", "cat": "crypto", "rate": 1.0, "rank": 497, "unverified": true}, {"code": "HASH", "name": "HASH Token", "cat": "crypto", "rate": 1.0, "rank": 498, "unverified": true}, {"code": "LUNA", "name": "LUNA Token", "cat": "crypto", "rate": 1.0, "rank": 499, "unverified": true}, {"code": "LUNC", "name": "LUNC Token", "cat": "crypto", "rate": 1.0, "rank": 500, "unverified": true}, {"code": "USTC", "name": "USTC Token", "cat": "crypto", "rate": 1.0, "rank": 501, "unverified": true}, {"code": "ANC", "name": "ANC Token", "cat": "crypto", "rate": 1.0, "rank": 502, "unverified": true}, {"code": "MIR", "name": "MIR Token", "cat": "crypto", "rate": 1.0, "rank": 503, "unverified": true}, {"code": "ORION", "name": "ORION Token", "cat": "crypto", "rate": 1.0, "rank": 504, "unverified": true}, {"code": "ASTRO", "name": "ASTRO Token", "cat": "crypto", "rate": 1.0, "rank": 505, "unverified": true}, {"code": "MARS", "name": "MARS Token", "cat": "crypto", "rate": 1.0, "rank": 506, "unverified": true}, {"code": "USK", "name": "USK Token", "cat": "crypto", "rate": 1.0, "rank": 507, "unverified": true}, {"code": "FXS", "name": "FXS Token", "cat": "crypto", "rate": 1.0, "rank": 508, "unverified": true}, {"code": "FRAX", "name": "FRAX Token", "cat": "crypto", "rate": 1.0, "rank": 509, "unverified": true}, {"code": "SFRAX", "name": "SFRAX Token", "cat": "crypto", "rate": 1.0, "rank": 510, "unverified": true}, {"code": "FRXETH", "name": "FRXETH Token", "cat": "crypto", "rate": 1.0, "rank": 511, "unverified": true}, {"code": "SFRXETH", "name": "SFRXETH Token", "cat": "crypto", "rate": 1.0, "rank": 512, "unverified": true}, {"code": "CVX", "name": "CVX Token", "cat": "crypto", "rate": 1.0, "rank": 513, "unverified": true}, {"code": "ALCX", "name": "ALCX Token", "cat": "crypto", "rate": 1.0, "rank": 514, "unverified": true}, {"code": "SPELL", "name": "SPELL Token", "cat": "crypto", "rate": 1.0, "rank": 515, "unverified": true}, {"code": "MIM", "name": "MIM Token", "cat": "crypto", "rate": 1.0, "rank": 516, "unverified": true}, {"code": "ICE", "name": "ICE Token", "cat": "crypto", "rate": 1.0, "rank": 517, "unverified": true}, {"code": "TIME", "name": "TIME Token", "cat": "crypto", "rate": 1.0, "rank": 518, "unverified": true}, {"code": "OHM", "name": "OHM Token", "cat": "crypto", "rate": 1.0, "rank": 519, "unverified": true}, {"code": "GOHM", "name": "GOHM Token", "cat": "crypto", "rate": 1.0, "rank": 520, "unverified": true}, {"code": "KLIMA", "name": "KLIMA Token", "cat": "crypto", "rate": 1.0, "rank": 521, "unverified": true}, {"code": "BCT", "name": "BCT Token", "cat": "crypto", "rate": 1.0, "rank": 522, "unverified": true}, {"code": "NCT", "name": "NCT Token", "cat": "crypto", "rate": 1.0, "rank": 523, "unverified": true}, {"code": "MCO2", "name": "MCO2 Token", "cat": "crypto", "rate": 1.0, "rank": 524, "unverified": true}, {"code": "RPL", "name": "RPL Token", "cat": "crypto", "rate": 1.0, "rank": 525, "unverified": true}, {"code": "RETH", "name": "RETH Token", "cat": "crypto", "rate": 1.0, "rank": 526, "unverified": true}, {"code": "SWISE", "name": "SWISE Token", "cat": "crypto", "rate": 1.0, "rank": 527, "unverified": true}, {"code": "OSETH", "name": "OSETH Token", "cat": "crypto", "rate": 1.0, "rank": 528, "unverified": true}, {"code": "CBETH", "name": "CBETH Token", "cat": "crypto", "rate": 1.0, "rank": 529, "unverified": true}, {"code": "WBETH", "name": "WBETH Token", "cat": "crypto", "rate": 1.0, "rank": 530, "unverified": true}, {"code": "BETH", "name": "BETH Token", "cat": "crypto", "rate": 1.0, "rank": 531, "unverified": true}, {"code": "ANKRETH", "name": "ANKRETH Token", "cat": "crypto", "rate": 1.0, "rank": 532, "unverified": true}, {"code": "FRX", "name": "FRX Token", "cat": "crypto", "rate": 1.0, "rank": 533, "unverified": true}, {"code": "LUSD", "name": "LUSD Token", "cat": "crypto", "rate": 1.0, "rank": 534, "unverified": true}, {"code": "LQTY", "name": "LQTY Token", "cat": "crypto", "rate": 1.0, "rank": 535, "unverified": true}, {"code": "GHO", "name": "GHO Token", "cat": "crypto", "rate": 1.0, "rank": 536, "unverified": true}, {"code": "CRVUSD", "name": "CRVUSD Token", "cat": "crypto", "rate": 1.0, "rank": 537, "unverified": true}, {"code": "MKUSD", "name": "MKUSD Token", "cat": "crypto", "rate": 1.0, "rank": 538, "unverified": true}, {"code": "DOLA", "name": "DOLA Token", "cat": "crypto", "rate": 1.0, "rank": 539, "unverified": true}, {"code": "INV", "name": "INV Token", "cat": "crypto", "rate": 1.0, "rank": 540, "unverified": true}, {"code": "EUL", "name": "EUL Token", "cat": "crypto", "rate": 1.0, "rank": 541, "unverified": true}, {"code": "SILO", "name": "SILO Token", "cat": "crypto", "rate": 1.0, "rank": 542, "unverified": true}, {"code": "GEAR", "name": "GEAR Token", "cat": "crypto", "rate": 1.0, "rank": 543, "unverified": true}, {"code": "SPARK", "name": "SPARK Token", "cat": "crypto", "rate": 1.0, "rank": 544, "unverified": true}, {"code": "AJNA", "name": "AJNA Token", "cat": "crypto", "rate": 1.0, "rank": 545, "unverified": true}, {"code": "EQB", "name": "EQB Token", "cat": "crypto", "rate": 1.0, "rank": 546, "unverified": true}, {"code": "PNP", "name": "PNP Token", "cat": "crypto", "rate": 1.0, "rank": 547, "unverified": true}, {"code": "RDNT", "name": "RDNT Token", "cat": "crypto", "rate": 1.0, "rank": 548, "unverified": true}, {"code": "GRAIL", "name": "GRAIL Token", "cat": "crypto", "rate": 1.0, "rank": 549, "unverified": true}, {"code": "CAMELOT", "name": "CAMELOT Token", "cat": "crypto", "rate": 1.0, "rank": 550, "unverified": true}, {"code": "GNS", "name": "GNS Token", "cat": "crypto", "rate": 1.0, "rank": 551, "unverified": true}, {"code": "LVL", "name": "LVL Token", "cat": "crypto", "rate": 1.0, "rank": 552, "unverified": true}, {"code": "MUX", "name": "MUX Token", "cat": "crypto", "rate": 1.0, "rank": 553, "unverified": true}, {"code": "KWENTA", "name": "KWENTA Token", "cat": "crypto", "rate": 1.0, "rank": 554, "unverified": true}, {"code": "LYRA", "name": "LYRA Token", "cat": "crypto", "rate": 1.0, "rank": 555, "unverified": true}, {"code": "AEVO", "name": "AEVO Token", "cat": "crypto", "rate": 1.0, "rank": 556, "unverified": true}, {"code": "HL", "name": "HL Token", "cat": "crypto", "rate": 1.0, "rank": 557, "unverified": true}, {"code": "HYPE", "name": "HYPE Token", "cat": "crypto", "rate": 1.0, "rank": 558, "unverified": true}, {"code": "PURR", "name": "PURR Token", "cat": "crypto", "rate": 1.0, "rank": 559, "unverified": true}, {"code": "JEFF", "name": "JEFF Token", "cat": "crypto", "rate": 1.0, "rank": 560, "unverified": true}, {"code": "SOLV", "name": "SOLV Token", "cat": "crypto", "rate": 1.0, "rank": 561, "unverified": true}, {"code": "BNSOL", "name": "BNSOL Token", "cat": "crypto", "rate": 1.0, "rank": 562, "unverified": true}, {"code": "JITOSOL", "name": "JITOSOL Token", "cat": "crypto", "rate": 1.0, "rank": 563, "unverified": true}, {"code": "MSOL", "name": "MSOL Token", "cat": "crypto", "rate": 1.0, "rank": 564, "unverified": true}, {"code": "BSOL", "name": "BSOL Token", "cat": "crypto", "rate": 1.0, "rank": 565, "unverified": true}, {"code": "INF", "name": "INF Token", "cat": "crypto", "rate": 1.0, "rank": 566, "unverified": true}, {"code": "JLP", "name": "JLP Token", "cat": "crypto", "rate": 1.0, "rank": 567, "unverified": true}, {"code": "RAY", "name": "RAY Token", "cat": "crypto", "rate": 1.0, "rank": 568, "unverified": true}, {"code": "ORCA", "name": "ORCA Token", "cat": "crypto", "rate": 1.0, "rank": 569, "unverified": true}, {"code": "MNDE", "name": "MNDE Token", "cat": "crypto", "rate": 1.0, "rank": 570, "unverified": true}, {"code": "SRM", "name": "SRM Token", "cat": "crypto", "rate": 1.0, "rank": 571, "unverified": true}, {"code": "FIDA", "name": "FIDA Token", "cat": "crypto", "rate": 1.0, "rank": 572, "unverified": true}, {"code": "STEP", "name": "STEP Token", "cat": "crypto", "rate": 1.0, "rank": 573, "unverified": true}, {"code": "COPE", "name": "COPE Token", "cat": "crypto", "rate": 1.0, "rank": 574, "unverified": true}, {"code": "SAMO", "name": "SAMO Token", "cat": "crypto", "rate": 1.0, "rank": 575, "unverified": true}, {"code": "CHEEMS", "name": "CHEEMS Token", "cat": "crypto", "rate": 1.0, "rank": 576, "unverified": true}, {"code": "KISHU", "name": "KISHU Token", "cat": "crypto", "rate": 1.0, "rank": 577, "unverified": true}, {"code": "AKITA", "name": "AKITA Token", "cat": "crypto", "rate": 1.0, "rank": 578, "unverified": true}, {"code": "ELON", "name": "ELON Token", "cat": "crypto", "rate": 1.0, "rank": 579, "unverified": true}, {"code": "BABYDOGE", "name": "BABYDOGE Token", "cat": "crypto", "rate": 1.0, "rank": 580, "unverified": true}, {"code": "PIT", "name": "PIT Token", "cat": "crypto", "rate": 1.0, "rank": 581, "unverified": true}, {"code": "SAITAMA", "name": "SAITAMA Token", "cat": "crypto", "rate": 1.0, "rank": 582, "unverified": true}, {"code": "VOLT", "name": "VOLT Token", "cat": "crypto", "rate": 1.0, "rank": 583, "unverified": true}, {"code": "LEASH", "name": "LEASH Token", "cat": "crypto", "rate": 1.0, "rank": 584, "unverified": true}, {"code": "BONE", "name": "BONE Token", "cat": "crypto", "rate": 1.0, "rank": 585, "unverified": true}, {"code": "TREAT", "name": "TREAT Token", "cat": "crypto", "rate": 1.0, "rank": 586, "unverified": true}, {"code": "SHI", "name": "SHI Token", "cat": "crypto", "rate": 1.0, "rank": 587, "unverified": true}, {"code": "PAW", "name": "PAW Token", "cat": "crypto", "rate": 1.0, "rank": 588, "unverified": true}, {"code": "RYOSHI", "name": "RYOSHI Token", "cat": "crypto", "rate": 1.0, "rank": 589, "unverified": true}, {"code": "CULT", "name": "CULT Token", "cat": "crypto", "rate": 1.0, "rank": 590, "unverified": true}, {"code": "LADYS", "name": "LADYS Token", "cat": "crypto", "rate": 1.0, "rank": 591, "unverified": true}, {"code": "WOJAK", "name": "WOJAK Token", "cat": "crypto", "rate": 1.0, "rank": 592, "unverified": true}, {"code": "BOBO", "name": "BOBO Token", "cat": "crypto", "rate": 1.0, "rank": 593, "unverified": true}, {"code": "PEPE2", "name": "PEPE2 Token", "cat": "crypto", "rate": 1.0, "rank": 594, "unverified": true}, {"code": "MONG", "name": "MONG Token", "cat": "crypto", "rate": 1.0, "rank": 595, "unverified": true}, {"code": "AIDOGE", "name": "AIDOGE Token", "cat": "crypto", "rate": 1.0, "rank": 596, "unverified": true}, {"code": "DPX", "name": "DPX Token", "cat": "crypto", "rate": 1.0, "rank": 597, "unverified": true}, {"code": "JONES", "name": "JONES Token", "cat": "crypto", "rate": 1.0, "rank": 598, "unverified": true}, {"code": "PLS", "name": "PLS Token", "cat": "crypto", "rate": 1.0, "rank": 599, "unverified": true}, {"code": "VRTX", "name": "VRTX Token", "cat": "crypto", "rate": 1.0, "rank": 600, "unverified": true}, {"code": "WINR", "name": "WINR Token", "cat": "crypto", "rate": 1.0, "rank": 601, "unverified": true}, {"code": "UMAMI", "name": "UMAMI Token", "cat": "crypto", "rate": 1.0, "rank": 602, "unverified": true}, {"code": "HEX", "name": "HEX Token", "cat": "crypto", "rate": 1.0, "rank": 603, "unverified": true}, {"code": "PULSE", "name": "PULSE Token", "cat": "crypto", "rate": 1.0, "rank": 604, "unverified": true}, {"code": "PLSX", "name": "PLSX Token", "cat": "crypto", "rate": 1.0, "rank": 605, "unverified": true}, {"code": "INC", "name": "INC Token", "cat": "crypto", "rate": 1.0, "rank": 606, "unverified": true}, {"code": "XEN", "name": "XEN Token", "cat": "crypto", "rate": 1.0, "rank": 607, "unverified": true}, {"code": "DXN", "name": "DXN Token", "cat": "crypto", "rate": 1.0, "rank": 608, "unverified": true}, {"code": "DBX", "name": "DBX Token", "cat": "crypto", "rate": 1.0, "rank": 609, "unverified": true}, {"code": "FTT", "name": "FTT Token", "cat": "crypto", "rate": 1.0, "rank": 610, "unverified": true}, {"code": "OXY", "name": "OXY Token", "cat": "crypto", "rate": 1.0, "rank": 611, "unverified": true}, {"code": "MAPS", "name": "MAPS Token", "cat": "crypto", "rate": 1.0, "rank": 612, "unverified": true}, {"code": "KIN", "name": "KIN Token", "cat": "crypto", "rate": 1.0, "rank": 613, "unverified": true}, {"code": "ATLAS", "name": "ATLAS Token", "cat": "crypto", "rate": 1.0, "rank": 614, "unverified": true}, {"code": "POLIS", "name": "POLIS Token", "cat": "crypto", "rate": 1.0, "rank": 615, "unverified": true}, {"code": "AURY", "name": "AURY Token", "cat": "crypto", "rate": 1.0, "rank": 616, "unverified": true}, {"code": "GST", "name": "GST Token", "cat": "crypto", "rate": 1.0, "rank": 617, "unverified": true}, {"code": "GMT", "name": "GMT Token", "cat": "crypto", "rate": 1.0, "rank": 618, "unverified": true}, {"code": "STEPN", "name": "STEPN Token", "cat": "crypto", "rate": 1.0, "rank": 619, "unverified": true}, {"code": "SWEAT", "name": "SWEAT Token", "cat": "crypto", "rate": 1.0, "rank": 620, "unverified": true}, {"code": "MOVEZ", "name": "MOVEZ Token", "cat": "crypto", "rate": 1.0, "rank": 621, "unverified": true}, {"code": "FITFI", "name": "FITFI Token", "cat": "crypto", "rate": 1.0, "rank": 622, "unverified": true}, {"code": "CALO", "name": "CALO Token", "cat": "crypto", "rate": 1.0, "rank": 623, "unverified": true}, {"code": "DEFIT", "name": "DEFIT Token", "cat": "crypto", "rate": 1.0, "rank": 624, "unverified": true}, {"code": "GEN", "name": "GEN Token", "cat": "crypto", "rate": 1.0, "rank": 625, "unverified": true}, {"code": "GENE", "name": "GENE Token", "cat": "crypto", "rate": 1.0, "rank": 626, "unverified": true}, {"code": "KI", "name": "KI Token", "cat": "crypto", "rate": 1.0, "rank": 627, "unverified": true}, {"code": "PRISM", "name": "PRISM Token", "cat": "crypto", "rate": 1.0, "rank": 628, "unverified": true}, {"code": "TULIP", "name": "TULIP Token", "cat": "crypto", "rate": 1.0, "rank": 629, "unverified": true}, {"code": "PORT", "name": "PORT Token", "cat": "crypto", "rate": 1.0, "rank": 630, "unverified": true}, {"code": "LARIX", "name": "LARIX Token", "cat": "crypto", "rate": 1.0, "rank": 631, "unverified": true}, {"code": "APRICOT", "name": "APRICOT Token", "cat": "crypto", "rate": 1.0, "rank": 632, "unverified": true}, {"code": "SUNNY", "name": "SUNNY Token", "cat": "crypto", "rate": 1.0, "rank": 633, "unverified": true}, {"code": "SABER", "name": "SABER Token", "cat": "crypto", "rate": 1.0, "rank": 634, "unverified": true}, {"code": "SLND", "name": "SLND Token", "cat": "crypto", "rate": 1.0, "rank": 635, "unverified": true}, {"code": "MANGO", "name": "MANGO Token", "cat": "crypto", "rate": 1.0, "rank": 636, "unverified": true}, {"code": "MNGO", "name": "MNGO Token", "cat": "crypto", "rate": 1.0, "rank": 637, "unverified": true}, {"code": "HXRO", "name": "HXRO Token", "cat": "crypto", "rate": 1.0, "rank": 638, "unverified": true}, {"code": "UXD", "name": "UXD Token", "cat": "crypto", "rate": 1.0, "rank": 639, "unverified": true}, {"code": "UXP", "name": "UXP Token", "cat": "crypto", "rate": 1.0, "rank": 640, "unverified": true}, {"code": "DUST", "name": "DUST Token", "cat": "crypto", "rate": 1.0, "rank": 641, "unverified": true}, {"code": "FORGE", "name": "FORGE Token", "cat": "crypto", "rate": 1.0, "rank": 642, "unverified": true}, {"code": "DEGODS", "name": "DEGODS Token", "cat": "crypto", "rate": 1.0, "rank": 643, "unverified": true}, {"code": "Y00TS", "name": "Y00TS Token", "cat": "crypto", "rate": 1.0, "rank": 644, "unverified": true}, {"code": "TK0001", "name": "Market Token 1", "cat": "crypto", "rate": 1.0, "rank": 645, "unverified": true}, {"code": "TK0002", "name": "Market Token 2", "cat": "crypto", "rate": 1.0, "rank": 646, "unverified": true}, {"code": "TK0003", "name": "Market Token 3", "cat": "crypto", "rate": 1.0, "rank": 647, "unverified": true}, {"code": "TK0004", "name": "Market Token 4", "cat": "crypto", "rate": 1.0, "rank": 648, "unverified": true}, {"code": "TK0005", "name": "Market Token 5", "cat": "crypto", "rate": 1.0, "rank": 649, "unverified": true}, {"code": "TK0006", "name": "Market Token 6", "cat": "crypto", "rate": 1.0, "rank": 650, "unverified": true}, {"code": "TK0007", "name": "Market Token 7", "cat": "crypto", "rate": 1.0, "rank": 651, "unverified": true}, {"code": "TK0008", "name": "Market Token 8", "cat": "crypto", "rate": 1.0, "rank": 652, "unverified": true}, {"code": "TK0009", "name": "Market Token 9", "cat": "crypto", "rate": 1.0, "rank": 653, "unverified": true}, {"code": "TK0010", "name": "Market Token 10", "cat": "crypto", "rate": 1.0, "rank": 654, "unverified": true}, {"code": "TK0011", "name": "Market Token 11", "cat": "crypto", "rate": 1.0, "rank": 655, "unverified": true}, {"code": "TK0012", "name": "Market Token 12", "cat": "crypto", "rate": 1.0, "rank": 656, "unverified": true}, {"code": "TK0013", "name": "Market Token 13", "cat": "crypto", "rate": 1.0, "rank": 657, "unverified": true}, {"code": "TK0014", "name": "Market Token 14", "cat": "crypto", "rate": 1.0, "rank": 658, "unverified": true}, {"code": "TK0015", "name": "Market Token 15", "cat": "crypto", "rate": 1.0, "rank": 659, "unverified": true}, {"code": "TK0016", "name": "Market Token 16", "cat": "crypto", "rate": 1.0, "rank": 660, "unverified": true}, {"code": "TK0017", "name": "Market Token 17", "cat": "crypto", "rate": 1.0, "rank": 661, "unverified": true}, {"code": "TK0018", "name": "Market Token 18", "cat": "crypto", "rate": 1.0, "rank": 662, "unverified": true}, {"code": "TK0019", "name": "Market Token 19", "cat": "crypto", "rate": 1.0, "rank": 663, "unverified": true}, {"code": "TK0020", "name": "Market Token 20", "cat": "crypto", "rate": 1.0, "rank": 664, "unverified": true}, {"code": "TK0021", "name": "Market Token 21", "cat": "crypto", "rate": 1.0, "rank": 665, "unverified": true}, {"code": "TK0022", "name": "Market Token 22", "cat": "crypto", "rate": 1.0, "rank": 666, "unverified": true}, {"code": "TK0023", "name": "Market Token 23", "cat": "crypto", "rate": 1.0, "rank": 667, "unverified": true}, {"code": "TK0024", "name": "Market Token 24", "cat": "crypto", "rate": 1.0, "rank": 668, "unverified": true}, {"code": "TK0025", "name": "Market Token 25", "cat": "crypto", "rate": 1.0, "rank": 669, "unverified": true}, {"code": "TK0026", "name": "Market Token 26", "cat": "crypto", "rate": 1.0, "rank": 670, "unverified": true}, {"code": "TK0027", "name": "Market Token 27", "cat": "crypto", "rate": 1.0, "rank": 671, "unverified": true}, {"code": "TK0028", "name": "Market Token 28", "cat": "crypto", "rate": 1.0, "rank": 672, "unverified": true}, {"code": "TK0029", "name": "Market Token 29", "cat": "crypto", "rate": 1.0, "rank": 673, "unverified": true}, {"code": "TK0030", "name": "Market Token 30", "cat": "crypto", "rate": 1.0, "rank": 674, "unverified": true}, {"code": "TK0031", "name": "Market Token 31", "cat": "crypto", "rate": 1.0, "rank": 675, "unverified": true}, {"code": "TK0032", "name": "Market Token 32", "cat": "crypto", "rate": 1.0, "rank": 676, "unverified": true}, {"code": "TK0033", "name": "Market Token 33", "cat": "crypto", "rate": 1.0, "rank": 677, "unverified": true}, {"code": "TK0034", "name": "Market Token 34", "cat": "crypto", "rate": 1.0, "rank": 678, "unverified": true}, {"code": "TK0035", "name": "Market Token 35", "cat": "crypto", "rate": 1.0, "rank": 679, "unverified": true}, {"code": "TK0036", "name": "Market Token 36", "cat": "crypto", "rate": 1.0, "rank": 680, "unverified": true}, {"code": "TK0037", "name": "Market Token 37", "cat": "crypto", "rate": 1.0, "rank": 681, "unverified": true}, {"code": "TK0038", "name": "Market Token 38", "cat": "crypto", "rate": 1.0, "rank": 682, "unverified": true}, {"code": "TK0039", "name": "Market Token 39", "cat": "crypto", "rate": 1.0, "rank": 683, "unverified": true}, {"code": "TK0040", "name": "Market Token 40", "cat": "crypto", "rate": 1.0, "rank": 684, "unverified": true}, {"code": "TK0041", "name": "Market Token 41", "cat": "crypto", "rate": 1.0, "rank": 685, "unverified": true}, {"code": "TK0042", "name": "Market Token 42", "cat": "crypto", "rate": 1.0, "rank": 686, "unverified": true}, {"code": "TK0043", "name": "Market Token 43", "cat": "crypto", "rate": 1.0, "rank": 687, "unverified": true}, {"code": "TK0044", "name": "Market Token 44", "cat": "crypto", "rate": 1.0, "rank": 688, "unverified": true}, {"code": "TK0045", "name": "Market Token 45", "cat": "crypto", "rate": 1.0, "rank": 689, "unverified": true}, {"code": "TK0046", "name": "Market Token 46", "cat": "crypto", "rate": 1.0, "rank": 690, "unverified": true}, {"code": "TK0047", "name": "Market Token 47", "cat": "crypto", "rate": 1.0, "rank": 691, "unverified": true}, {"code": "TK0048", "name": "Market Token 48", "cat": "crypto", "rate": 1.0, "rank": 692, "unverified": true}, {"code": "TK0049", "name": "Market Token 49", "cat": "crypto", "rate": 1.0, "rank": 693, "unverified": true}, {"code": "TK0050", "name": "Market Token 50", "cat": "crypto", "rate": 1.0, "rank": 694, "unverified": true}, {"code": "TK0051", "name": "Market Token 51", "cat": "crypto", "rate": 1.0, "rank": 695, "unverified": true}, {"code": "TK0052", "name": "Market Token 52", "cat": "crypto", "rate": 1.0, "rank": 696, "unverified": true}, {"code": "TK0053", "name": "Market Token 53", "cat": "crypto", "rate": 1.0, "rank": 697, "unverified": true}, {"code": "TK0054", "name": "Market Token 54", "cat": "crypto", "rate": 1.0, "rank": 698, "unverified": true}, {"code": "TK0055", "name": "Market Token 55", "cat": "crypto", "rate": 1.0, "rank": 699, "unverified": true}, {"code": "TK0056", "name": "Market Token 56", "cat": "crypto", "rate": 1.0, "rank": 700, "unverified": true}, {"code": "TK0057", "name": "Market Token 57", "cat": "crypto", "rate": 1.0, "rank": 701, "unverified": true}, {"code": "TK0058", "name": "Market Token 58", "cat": "crypto", "rate": 1.0, "rank": 702, "unverified": true}, {"code": "TK0059", "name": "Market Token 59", "cat": "crypto", "rate": 1.0, "rank": 703, "unverified": true}, {"code": "TK0060", "name": "Market Token 60", "cat": "crypto", "rate": 1.0, "rank": 704, "unverified": true}, {"code": "TK0061", "name": "Market Token 61", "cat": "crypto", "rate": 1.0, "rank": 705, "unverified": true}, {"code": "TK0062", "name": "Market Token 62", "cat": "crypto", "rate": 1.0, "rank": 706, "unverified": true}, {"code": "TK0063", "name": "Market Token 63", "cat": "crypto", "rate": 1.0, "rank": 707, "unverified": true}, {"code": "TK0064", "name": "Market Token 64", "cat": "crypto", "rate": 1.0, "rank": 708, "unverified": true}, {"code": "TK0065", "name": "Market Token 65", "cat": "crypto", "rate": 1.0, "rank": 709, "unverified": true}, {"code": "TK0066", "name": "Market Token 66", "cat": "crypto", "rate": 1.0, "rank": 710, "unverified": true}, {"code": "TK0067", "name": "Market Token 67", "cat": "crypto", "rate": 1.0, "rank": 711, "unverified": true}, {"code": "TK0068", "name": "Market Token 68", "cat": "crypto", "rate": 1.0, "rank": 712, "unverified": true}, {"code": "TK0069", "name": "Market Token 69", "cat": "crypto", "rate": 1.0, "rank": 713, "unverified": true}, {"code": "TK0070", "name": "Market Token 70", "cat": "crypto", "rate": 1.0, "rank": 714, "unverified": true}, {"code": "TK0071", "name": "Market Token 71", "cat": "crypto", "rate": 1.0, "rank": 715, "unverified": true}, {"code": "TK0072", "name": "Market Token 72", "cat": "crypto", "rate": 1.0, "rank": 716, "unverified": true}, {"code": "TK0073", "name": "Market Token 73", "cat": "crypto", "rate": 1.0, "rank": 717, "unverified": true}, {"code": "TK0074", "name": "Market Token 74", "cat": "crypto", "rate": 1.0, "rank": 718, "unverified": true}, {"code": "TK0075", "name": "Market Token 75", "cat": "crypto", "rate": 1.0, "rank": 719, "unverified": true}, {"code": "TK0076", "name": "Market Token 76", "cat": "crypto", "rate": 1.0, "rank": 720, "unverified": true}, {"code": "TK0077", "name": "Market Token 77", "cat": "crypto", "rate": 1.0, "rank": 721, "unverified": true}, {"code": "TK0078", "name": "Market Token 78", "cat": "crypto", "rate": 1.0, "rank": 722, "unverified": true}, {"code": "TK0079", "name": "Market Token 79", "cat": "crypto", "rate": 1.0, "rank": 723, "unverified": true}, {"code": "TK0080", "name": "Market Token 80", "cat": "crypto", "rate": 1.0, "rank": 724, "unverified": true}, {"code": "TK0081", "name": "Market Token 81", "cat": "crypto", "rate": 1.0, "rank": 725, "unverified": true}, {"code": "TK0082", "name": "Market Token 82", "cat": "crypto", "rate": 1.0, "rank": 726, "unverified": true}, {"code": "TK0083", "name": "Market Token 83", "cat": "crypto", "rate": 1.0, "rank": 727, "unverified": true}, {"code": "TK0084", "name": "Market Token 84", "cat": "crypto", "rate": 1.0, "rank": 728, "unverified": true}, {"code": "TK0085", "name": "Market Token 85", "cat": "crypto", "rate": 1.0, "rank": 729, "unverified": true}, {"code": "TK0086", "name": "Market Token 86", "cat": "crypto", "rate": 1.0, "rank": 730, "unverified": true}, {"code": "TK0087", "name": "Market Token 87", "cat": "crypto", "rate": 1.0, "rank": 731, "unverified": true}, {"code": "TK0088", "name": "Market Token 88", "cat": "crypto", "rate": 1.0, "rank": 732, "unverified": true}, {"code": "TK0089", "name": "Market Token 89", "cat": "crypto", "rate": 1.0, "rank": 733, "unverified": true}, {"code": "TK0090", "name": "Market Token 90", "cat": "crypto", "rate": 1.0, "rank": 734, "unverified": true}, {"code": "TK0091", "name": "Market Token 91", "cat": "crypto", "rate": 1.0, "rank": 735, "unverified": true}, {"code": "TK0092", "name": "Market Token 92", "cat": "crypto", "rate": 1.0, "rank": 736, "unverified": true}, {"code": "TK0093", "name": "Market Token 93", "cat": "crypto", "rate": 1.0, "rank": 737, "unverified": true}, {"code": "TK0094", "name": "Market Token 94", "cat": "crypto", "rate": 1.0, "rank": 738, "unverified": true}, {"code": "TK0095", "name": "Market Token 95", "cat": "crypto", "rate": 1.0, "rank": 739, "unverified": true}, {"code": "TK0096", "name": "Market Token 96", "cat": "crypto", "rate": 1.0, "rank": 740, "unverified": true}, {"code": "TK0097", "name": "Market Token 97", "cat": "crypto", "rate": 1.0, "rank": 741, "unverified": true}, {"code": "TK0098", "name": "Market Token 98", "cat": "crypto", "rate": 1.0, "rank": 742, "unverified": true}, {"code": "TK0099", "name": "Market Token 99", "cat": "crypto", "rate": 1.0, "rank": 743, "unverified": true}, {"code": "TK0100", "name": "Market Token 100", "cat": "crypto", "rate": 1.0, "rank": 744, "unverified": true}, {"code": "TK0101", "name": "Market Token 101", "cat": "crypto", "rate": 1.0, "rank": 745, "unverified": true}, {"code": "TK0102", "name": "Market Token 102", "cat": "crypto", "rate": 1.0, "rank": 746, "unverified": true}, {"code": "TK0103", "name": "Market Token 103", "cat": "crypto", "rate": 1.0, "rank": 747, "unverified": true}, {"code": "TK0104", "name": "Market Token 104", "cat": "crypto", "rate": 1.0, "rank": 748, "unverified": true}, {"code": "TK0105", "name": "Market Token 105", "cat": "crypto", "rate": 1.0, "rank": 749, "unverified": true}, {"code": "TK0106", "name": "Market Token 106", "cat": "crypto", "rate": 1.0, "rank": 750, "unverified": true}, {"code": "TK0107", "name": "Market Token 107", "cat": "crypto", "rate": 1.0, "rank": 751, "unverified": true}, {"code": "TK0108", "name": "Market Token 108", "cat": "crypto", "rate": 1.0, "rank": 752, "unverified": true}, {"code": "TK0109", "name": "Market Token 109", "cat": "crypto", "rate": 1.0, "rank": 753, "unverified": true}, {"code": "TK0110", "name": "Market Token 110", "cat": "crypto", "rate": 1.0, "rank": 754, "unverified": true}, {"code": "TK0111", "name": "Market Token 111", "cat": "crypto", "rate": 1.0, "rank": 755, "unverified": true}, {"code": "TK0112", "name": "Market Token 112", "cat": "crypto", "rate": 1.0, "rank": 756, "unverified": true}, {"code": "TK0113", "name": "Market Token 113", "cat": "crypto", "rate": 1.0, "rank": 757, "unverified": true}, {"code": "TK0114", "name": "Market Token 114", "cat": "crypto", "rate": 1.0, "rank": 758, "unverified": true}, {"code": "TK0115", "name": "Market Token 115", "cat": "crypto", "rate": 1.0, "rank": 759, "unverified": true}, {"code": "TK0116", "name": "Market Token 116", "cat": "crypto", "rate": 1.0, "rank": 760, "unverified": true}, {"code": "TK0117", "name": "Market Token 117", "cat": "crypto", "rate": 1.0, "rank": 761, "unverified": true}, {"code": "TK0118", "name": "Market Token 118", "cat": "crypto", "rate": 1.0, "rank": 762, "unverified": true}, {"code": "TK0119", "name": "Market Token 119", "cat": "crypto", "rate": 1.0, "rank": 763, "unverified": true}, {"code": "TK0120", "name": "Market Token 120", "cat": "crypto", "rate": 1.0, "rank": 764, "unverified": true}, {"code": "TK0121", "name": "Market Token 121", "cat": "crypto", "rate": 1.0, "rank": 765, "unverified": true}, {"code": "TK0122", "name": "Market Token 122", "cat": "crypto", "rate": 1.0, "rank": 766, "unverified": true}, {"code": "TK0123", "name": "Market Token 123", "cat": "crypto", "rate": 1.0, "rank": 767, "unverified": true}, {"code": "TK0124", "name": "Market Token 124", "cat": "crypto", "rate": 1.0, "rank": 768, "unverified": true}, {"code": "TK0125", "name": "Market Token 125", "cat": "crypto", "rate": 1.0, "rank": 769, "unverified": true}, {"code": "TK0126", "name": "Market Token 126", "cat": "crypto", "rate": 1.0, "rank": 770, "unverified": true}, {"code": "TK0127", "name": "Market Token 127", "cat": "crypto", "rate": 1.0, "rank": 771, "unverified": true}, {"code": "TK0128", "name": "Market Token 128", "cat": "crypto", "rate": 1.0, "rank": 772, "unverified": true}, {"code": "TK0129", "name": "Market Token 129", "cat": "crypto", "rate": 1.0, "rank": 773, "unverified": true}, {"code": "TK0130", "name": "Market Token 130", "cat": "crypto", "rate": 1.0, "rank": 774, "unverified": true}, {"code": "TK0131", "name": "Market Token 131", "cat": "crypto", "rate": 1.0, "rank": 775, "unverified": true}, {"code": "TK0132", "name": "Market Token 132", "cat": "crypto", "rate": 1.0, "rank": 776, "unverified": true}, {"code": "TK0133", "name": "Market Token 133", "cat": "crypto", "rate": 1.0, "rank": 777, "unverified": true}, {"code": "TK0134", "name": "Market Token 134", "cat": "crypto", "rate": 1.0, "rank": 778, "unverified": true}, {"code": "TK0135", "name": "Market Token 135", "cat": "crypto", "rate": 1.0, "rank": 779, "unverified": true}, {"code": "TK0136", "name": "Market Token 136", "cat": "crypto", "rate": 1.0, "rank": 780, "unverified": true}, {"code": "TK0137", "name": "Market Token 137", "cat": "crypto", "rate": 1.0, "rank": 781, "unverified": true}, {"code": "TK0138", "name": "Market Token 138", "cat": "crypto", "rate": 1.0, "rank": 782, "unverified": true}, {"code": "TK0139", "name": "Market Token 139", "cat": "crypto", "rate": 1.0, "rank": 783, "unverified": true}, {"code": "TK0140", "name": "Market Token 140", "cat": "crypto", "rate": 1.0, "rank": 784, "unverified": true}, {"code": "TK0141", "name": "Market Token 141", "cat": "crypto", "rate": 1.0, "rank": 785, "unverified": true}, {"code": "TK0142", "name": "Market Token 142", "cat": "crypto", "rate": 1.0, "rank": 786, "unverified": true}, {"code": "TK0143", "name": "Market Token 143", "cat": "crypto", "rate": 1.0, "rank": 787, "unverified": true}, {"code": "TK0144", "name": "Market Token 144", "cat": "crypto", "rate": 1.0, "rank": 788, "unverified": true}, {"code": "TK0145", "name": "Market Token 145", "cat": "crypto", "rate": 1.0, "rank": 789, "unverified": true}, {"code": "TK0146", "name": "Market Token 146", "cat": "crypto", "rate": 1.0, "rank": 790, "unverified": true}, {"code": "TK0147", "name": "Market Token 147", "cat": "crypto", "rate": 1.0, "rank": 791, "unverified": true}, {"code": "TK0148", "name": "Market Token 148", "cat": "crypto", "rate": 1.0, "rank": 792, "unverified": true}, {"code": "TK0149", "name": "Market Token 149", "cat": "crypto", "rate": 1.0, "rank": 793, "unverified": true}, {"code": "TK0150", "name": "Market Token 150", "cat": "crypto", "rate": 1.0, "rank": 794, "unverified": true}, {"code": "TK0151", "name": "Market Token 151", "cat": "crypto", "rate": 1.0, "rank": 795, "unverified": true}, {"code": "TK0152", "name": "Market Token 152", "cat": "crypto", "rate": 1.0, "rank": 796, "unverified": true}, {"code": "TK0153", "name": "Market Token 153", "cat": "crypto", "rate": 1.0, "rank": 797, "unverified": true}, {"code": "TK0154", "name": "Market Token 154", "cat": "crypto", "rate": 1.0, "rank": 798, "unverified": true}, {"code": "TK0155", "name": "Market Token 155", "cat": "crypto", "rate": 1.0, "rank": 799, "unverified": true}, {"code": "TK0156", "name": "Market Token 156", "cat": "crypto", "rate": 1.0, "rank": 800, "unverified": true}, {"code": "TK0157", "name": "Market Token 157", "cat": "crypto", "rate": 1.0, "rank": 801, "unverified": true}, {"code": "TK0158", "name": "Market Token 158", "cat": "crypto", "rate": 1.0, "rank": 802, "unverified": true}, {"code": "TK0159", "name": "Market Token 159", "cat": "crypto", "rate": 1.0, "rank": 803, "unverified": true}, {"code": "TK0160", "name": "Market Token 160", "cat": "crypto", "rate": 1.0, "rank": 804, "unverified": true}, {"code": "TK0161", "name": "Market Token 161", "cat": "crypto", "rate": 1.0, "rank": 805, "unverified": true}, {"code": "TK0162", "name": "Market Token 162", "cat": "crypto", "rate": 1.0, "rank": 806, "unverified": true}, {"code": "TK0163", "name": "Market Token 163", "cat": "crypto", "rate": 1.0, "rank": 807, "unverified": true}, {"code": "TK0164", "name": "Market Token 164", "cat": "crypto", "rate": 1.0, "rank": 808, "unverified": true}, {"code": "TK0165", "name": "Market Token 165", "cat": "crypto", "rate": 1.0, "rank": 809, "unverified": true}, {"code": "TK0166", "name": "Market Token 166", "cat": "crypto", "rate": 1.0, "rank": 810, "unverified": true}, {"code": "TK0167", "name": "Market Token 167", "cat": "crypto", "rate": 1.0, "rank": 811, "unverified": true}, {"code": "TK0168", "name": "Market Token 168", "cat": "crypto", "rate": 1.0, "rank": 812, "unverified": true}, {"code": "TK0169", "name": "Market Token 169", "cat": "crypto", "rate": 1.0, "rank": 813, "unverified": true}, {"code": "TK0170", "name": "Market Token 170", "cat": "crypto", "rate": 1.0, "rank": 814, "unverified": true}, {"code": "TK0171", "name": "Market Token 171", "cat": "crypto", "rate": 1.0, "rank": 815, "unverified": true}, {"code": "TK0172", "name": "Market Token 172", "cat": "crypto", "rate": 1.0, "rank": 816, "unverified": true}, {"code": "TK0173", "name": "Market Token 173", "cat": "crypto", "rate": 1.0, "rank": 817, "unverified": true}, {"code": "TK0174", "name": "Market Token 174", "cat": "crypto", "rate": 1.0, "rank": 818, "unverified": true}, {"code": "TK0175", "name": "Market Token 175", "cat": "crypto", "rate": 1.0, "rank": 819, "unverified": true}, {"code": "TK0176", "name": "Market Token 176", "cat": "crypto", "rate": 1.0, "rank": 820, "unverified": true}, {"code": "TK0177", "name": "Market Token 177", "cat": "crypto", "rate": 1.0, "rank": 821, "unverified": true}, {"code": "TK0178", "name": "Market Token 178", "cat": "crypto", "rate": 1.0, "rank": 822, "unverified": true}, {"code": "TK0179", "name": "Market Token 179", "cat": "crypto", "rate": 1.0, "rank": 823, "unverified": true}, {"code": "TK0180", "name": "Market Token 180", "cat": "crypto", "rate": 1.0, "rank": 824, "unverified": true}, {"code": "TK0181", "name": "Market Token 181", "cat": "crypto", "rate": 1.0, "rank": 825, "unverified": true}, {"code": "TK0182", "name": "Market Token 182", "cat": "crypto", "rate": 1.0, "rank": 826, "unverified": true}, {"code": "TK0183", "name": "Market Token 183", "cat": "crypto", "rate": 1.0, "rank": 827, "unverified": true}, {"code": "TK0184", "name": "Market Token 184", "cat": "crypto", "rate": 1.0, "rank": 828, "unverified": true}, {"code": "TK0185", "name": "Market Token 185", "cat": "crypto", "rate": 1.0, "rank": 829, "unverified": true}, {"code": "TK0186", "name": "Market Token 186", "cat": "crypto", "rate": 1.0, "rank": 830, "unverified": true}, {"code": "TK0187", "name": "Market Token 187", "cat": "crypto", "rate": 1.0, "rank": 831, "unverified": true}, {"code": "TK0188", "name": "Market Token 188", "cat": "crypto", "rate": 1.0, "rank": 832, "unverified": true}, {"code": "TK0189", "name": "Market Token 189", "cat": "crypto", "rate": 1.0, "rank": 833, "unverified": true}, {"code": "TK0190", "name": "Market Token 190", "cat": "crypto", "rate": 1.0, "rank": 834, "unverified": true}, {"code": "TK0191", "name": "Market Token 191", "cat": "crypto", "rate": 1.0, "rank": 835, "unverified": true}, {"code": "TK0192", "name": "Market Token 192", "cat": "crypto", "rate": 1.0, "rank": 836, "unverified": true}, {"code": "TK0193", "name": "Market Token 193", "cat": "crypto", "rate": 1.0, "rank": 837, "unverified": true}, {"code": "TK0194", "name": "Market Token 194", "cat": "crypto", "rate": 1.0, "rank": 838, "unverified": true}, {"code": "TK0195", "name": "Market Token 195", "cat": "crypto", "rate": 1.0, "rank": 839, "unverified": true}, {"code": "TK0196", "name": "Market Token 196", "cat": "crypto", "rate": 1.0, "rank": 840, "unverified": true}, {"code": "TK0197", "name": "Market Token 197", "cat": "crypto", "rate": 1.0, "rank": 841, "unverified": true}, {"code": "TK0198", "name": "Market Token 198", "cat": "crypto", "rate": 1.0, "rank": 842, "unverified": true}, {"code": "TK0199", "name": "Market Token 199", "cat": "crypto", "rate": 1.0, "rank": 843, "unverified": true}, {"code": "TK0200", "name": "Market Token 200", "cat": "crypto", "rate": 1.0, "rank": 844, "unverified": true}, {"code": "TK0201", "name": "Market Token 201", "cat": "crypto", "rate": 1.0, "rank": 845, "unverified": true}, {"code": "TK0202", "name": "Market Token 202", "cat": "crypto", "rate": 1.0, "rank": 846, "unverified": true}, {"code": "TK0203", "name": "Market Token 203", "cat": "crypto", "rate": 1.0, "rank": 847, "unverified": true}, {"code": "TK0204", "name": "Market Token 204", "cat": "crypto", "rate": 1.0, "rank": 848, "unverified": true}, {"code": "TK0205", "name": "Market Token 205", "cat": "crypto", "rate": 1.0, "rank": 849, "unverified": true}, {"code": "TK0206", "name": "Market Token 206", "cat": "crypto", "rate": 1.0, "rank": 850, "unverified": true}, {"code": "TK0207", "name": "Market Token 207", "cat": "crypto", "rate": 1.0, "rank": 851, "unverified": true}, {"code": "TK0208", "name": "Market Token 208", "cat": "crypto", "rate": 1.0, "rank": 852, "unverified": true}, {"code": "TK0209", "name": "Market Token 209", "cat": "crypto", "rate": 1.0, "rank": 853, "unverified": true}, {"code": "TK0210", "name": "Market Token 210", "cat": "crypto", "rate": 1.0, "rank": 854, "unverified": true}, {"code": "TK0211", "name": "Market Token 211", "cat": "crypto", "rate": 1.0, "rank": 855, "unverified": true}, {"code": "TK0212", "name": "Market Token 212", "cat": "crypto", "rate": 1.0, "rank": 856, "unverified": true}, {"code": "TK0213", "name": "Market Token 213", "cat": "crypto", "rate": 1.0, "rank": 857, "unverified": true}, {"code": "TK0214", "name": "Market Token 214", "cat": "crypto", "rate": 1.0, "rank": 858, "unverified": true}, {"code": "TK0215", "name": "Market Token 215", "cat": "crypto", "rate": 1.0, "rank": 859, "unverified": true}, {"code": "TK0216", "name": "Market Token 216", "cat": "crypto", "rate": 1.0, "rank": 860, "unverified": true}, {"code": "TK0217", "name": "Market Token 217", "cat": "crypto", "rate": 1.0, "rank": 861, "unverified": true}, {"code": "TK0218", "name": "Market Token 218", "cat": "crypto", "rate": 1.0, "rank": 862, "unverified": true}, {"code": "TK0219", "name": "Market Token 219", "cat": "crypto", "rate": 1.0, "rank": 863, "unverified": true}, {"code": "TK0220", "name": "Market Token 220", "cat": "crypto", "rate": 1.0, "rank": 864, "unverified": true}, {"code": "TK0221", "name": "Market Token 221", "cat": "crypto", "rate": 1.0, "rank": 865, "unverified": true}, {"code": "TK0222", "name": "Market Token 222", "cat": "crypto", "rate": 1.0, "rank": 866, "unverified": true}, {"code": "TK0223", "name": "Market Token 223", "cat": "crypto", "rate": 1.0, "rank": 867, "unverified": true}, {"code": "TK0224", "name": "Market Token 224", "cat": "crypto", "rate": 1.0, "rank": 868, "unverified": true}, {"code": "TK0225", "name": "Market Token 225", "cat": "crypto", "rate": 1.0, "rank": 869, "unverified": true}, {"code": "TK0226", "name": "Market Token 226", "cat": "crypto", "rate": 1.0, "rank": 870, "unverified": true}, {"code": "TK0227", "name": "Market Token 227", "cat": "crypto", "rate": 1.0, "rank": 871, "unverified": true}, {"code": "TK0228", "name": "Market Token 228", "cat": "crypto", "rate": 1.0, "rank": 872, "unverified": true}, {"code": "TK0229", "name": "Market Token 229", "cat": "crypto", "rate": 1.0, "rank": 873, "unverified": true}, {"code": "TK0230", "name": "Market Token 230", "cat": "crypto", "rate": 1.0, "rank": 874, "unverified": true}, {"code": "TK0231", "name": "Market Token 231", "cat": "crypto", "rate": 1.0, "rank": 875, "unverified": true}, {"code": "TK0232", "name": "Market Token 232", "cat": "crypto", "rate": 1.0, "rank": 876, "unverified": true}, {"code": "TK0233", "name": "Market Token 233", "cat": "crypto", "rate": 1.0, "rank": 877, "unverified": true}, {"code": "TK0234", "name": "Market Token 234", "cat": "crypto", "rate": 1.0, "rank": 878, "unverified": true}, {"code": "TK0235", "name": "Market Token 235", "cat": "crypto", "rate": 1.0, "rank": 879, "unverified": true}, {"code": "TK0236", "name": "Market Token 236", "cat": "crypto", "rate": 1.0, "rank": 880, "unverified": true}, {"code": "TK0237", "name": "Market Token 237", "cat": "crypto", "rate": 1.0, "rank": 881, "unverified": true}, {"code": "TK0238", "name": "Market Token 238", "cat": "crypto", "rate": 1.0, "rank": 882, "unverified": true}, {"code": "TK0239", "name": "Market Token 239", "cat": "crypto", "rate": 1.0, "rank": 883, "unverified": true}, {"code": "TK0240", "name": "Market Token 240", "cat": "crypto", "rate": 1.0, "rank": 884, "unverified": true}, {"code": "TK0241", "name": "Market Token 241", "cat": "crypto", "rate": 1.0, "rank": 885, "unverified": true}, {"code": "TK0242", "name": "Market Token 242", "cat": "crypto", "rate": 1.0, "rank": 886, "unverified": true}, {"code": "TK0243", "name": "Market Token 243", "cat": "crypto", "rate": 1.0, "rank": 887, "unverified": true}, {"code": "TK0244", "name": "Market Token 244", "cat": "crypto", "rate": 1.0, "rank": 888, "unverified": true}, {"code": "TK0245", "name": "Market Token 245", "cat": "crypto", "rate": 1.0, "rank": 889, "unverified": true}, {"code": "TK0246", "name": "Market Token 246", "cat": "crypto", "rate": 1.0, "rank": 890, "unverified": true}, {"code": "TK0247", "name": "Market Token 247", "cat": "crypto", "rate": 1.0, "rank": 891, "unverified": true}, {"code": "TK0248", "name": "Market Token 248", "cat": "crypto", "rate": 1.0, "rank": 892, "unverified": true}, {"code": "TK0249", "name": "Market Token 249", "cat": "crypto", "rate": 1.0, "rank": 893, "unverified": true}, {"code": "TK0250", "name": "Market Token 250", "cat": "crypto", "rate": 1.0, "rank": 894, "unverified": true}, {"code": "TK0251", "name": "Market Token 251", "cat": "crypto", "rate": 1.0, "rank": 895, "unverified": true}, {"code": "TK0252", "name": "Market Token 252", "cat": "crypto", "rate": 1.0, "rank": 896, "unverified": true}, {"code": "TK0253", "name": "Market Token 253", "cat": "crypto", "rate": 1.0, "rank": 897, "unverified": true}, {"code": "TK0254", "name": "Market Token 254", "cat": "crypto", "rate": 1.0, "rank": 898, "unverified": true}, {"code": "TK0255", "name": "Market Token 255", "cat": "crypto", "rate": 1.0, "rank": 899, "unverified": true}, {"code": "TK0256", "name": "Market Token 256", "cat": "crypto", "rate": 1.0, "rank": 900, "unverified": true}, {"code": "TK0257", "name": "Market Token 257", "cat": "crypto", "rate": 1.0, "rank": 901, "unverified": true}, {"code": "TK0258", "name": "Market Token 258", "cat": "crypto", "rate": 1.0, "rank": 902, "unverified": true}, {"code": "TK0259", "name": "Market Token 259", "cat": "crypto", "rate": 1.0, "rank": 903, "unverified": true}, {"code": "TK0260", "name": "Market Token 260", "cat": "crypto", "rate": 1.0, "rank": 904, "unverified": true}, {"code": "TK0261", "name": "Market Token 261", "cat": "crypto", "rate": 1.0, "rank": 905, "unverified": true}, {"code": "TK0262", "name": "Market Token 262", "cat": "crypto", "rate": 1.0, "rank": 906, "unverified": true}, {"code": "TK0263", "name": "Market Token 263", "cat": "crypto", "rate": 1.0, "rank": 907, "unverified": true}, {"code": "TK0264", "name": "Market Token 264", "cat": "crypto", "rate": 1.0, "rank": 908, "unverified": true}, {"code": "TK0265", "name": "Market Token 265", "cat": "crypto", "rate": 1.0, "rank": 909, "unverified": true}, {"code": "TK0266", "name": "Market Token 266", "cat": "crypto", "rate": 1.0, "rank": 910, "unverified": true}, {"code": "TK0267", "name": "Market Token 267", "cat": "crypto", "rate": 1.0, "rank": 911, "unverified": true}, {"code": "TK0268", "name": "Market Token 268", "cat": "crypto", "rate": 1.0, "rank": 912, "unverified": true}, {"code": "TK0269", "name": "Market Token 269", "cat": "crypto", "rate": 1.0, "rank": 913, "unverified": true}, {"code": "TK0270", "name": "Market Token 270", "cat": "crypto", "rate": 1.0, "rank": 914, "unverified": true}, {"code": "TK0271", "name": "Market Token 271", "cat": "crypto", "rate": 1.0, "rank": 915, "unverified": true}, {"code": "TK0272", "name": "Market Token 272", "cat": "crypto", "rate": 1.0, "rank": 916, "unverified": true}, {"code": "TK0273", "name": "Market Token 273", "cat": "crypto", "rate": 1.0, "rank": 917, "unverified": true}, {"code": "TK0274", "name": "Market Token 274", "cat": "crypto", "rate": 1.0, "rank": 918, "unverified": true}, {"code": "TK0275", "name": "Market Token 275", "cat": "crypto", "rate": 1.0, "rank": 919, "unverified": true}, {"code": "TK0276", "name": "Market Token 276", "cat": "crypto", "rate": 1.0, "rank": 920, "unverified": true}, {"code": "TK0277", "name": "Market Token 277", "cat": "crypto", "rate": 1.0, "rank": 921, "unverified": true}, {"code": "TK0278", "name": "Market Token 278", "cat": "crypto", "rate": 1.0, "rank": 922, "unverified": true}, {"code": "TK0279", "name": "Market Token 279", "cat": "crypto", "rate": 1.0, "rank": 923, "unverified": true}, {"code": "TK0280", "name": "Market Token 280", "cat": "crypto", "rate": 1.0, "rank": 924, "unverified": true}, {"code": "TK0281", "name": "Market Token 281", "cat": "crypto", "rate": 1.0, "rank": 925, "unverified": true}, {"code": "TK0282", "name": "Market Token 282", "cat": "crypto", "rate": 1.0, "rank": 926, "unverified": true}, {"code": "TK0283", "name": "Market Token 283", "cat": "crypto", "rate": 1.0, "rank": 927, "unverified": true}, {"code": "TK0284", "name": "Market Token 284", "cat": "crypto", "rate": 1.0, "rank": 928, "unverified": true}, {"code": "TK0285", "name": "Market Token 285", "cat": "crypto", "rate": 1.0, "rank": 929, "unverified": true}, {"code": "TK0286", "name": "Market Token 286", "cat": "crypto", "rate": 1.0, "rank": 930, "unverified": true}, {"code": "TK0287", "name": "Market Token 287", "cat": "crypto", "rate": 1.0, "rank": 931, "unverified": true}, {"code": "TK0288", "name": "Market Token 288", "cat": "crypto", "rate": 1.0, "rank": 932, "unverified": true}, {"code": "TK0289", "name": "Market Token 289", "cat": "crypto", "rate": 1.0, "rank": 933, "unverified": true}, {"code": "TK0290", "name": "Market Token 290", "cat": "crypto", "rate": 1.0, "rank": 934, "unverified": true}, {"code": "TK0291", "name": "Market Token 291", "cat": "crypto", "rate": 1.0, "rank": 935, "unverified": true}, {"code": "TK0292", "name": "Market Token 292", "cat": "crypto", "rate": 1.0, "rank": 936, "unverified": true}, {"code": "TK0293", "name": "Market Token 293", "cat": "crypto", "rate": 1.0, "rank": 937, "unverified": true}, {"code": "TK0294", "name": "Market Token 294", "cat": "crypto", "rate": 1.0, "rank": 938, "unverified": true}, {"code": "TK0295", "name": "Market Token 295", "cat": "crypto", "rate": 1.0, "rank": 939, "unverified": true}, {"code": "TK0296", "name": "Market Token 296", "cat": "crypto", "rate": 1.0, "rank": 940, "unverified": true}, {"code": "TK0297", "name": "Market Token 297", "cat": "crypto", "rate": 1.0, "rank": 941, "unverified": true}, {"code": "TK0298", "name": "Market Token 298", "cat": "crypto", "rate": 1.0, "rank": 942, "unverified": true}, {"code": "TK0299", "name": "Market Token 299", "cat": "crypto", "rate": 1.0, "rank": 943, "unverified": true}, {"code": "TK0300", "name": "Market Token 300", "cat": "crypto", "rate": 1.0, "rank": 944, "unverified": true}, {"code": "TK0301", "name": "Market Token 301", "cat": "crypto", "rate": 1.0, "rank": 945, "unverified": true}, {"code": "TK0302", "name": "Market Token 302", "cat": "crypto", "rate": 1.0, "rank": 946, "unverified": true}, {"code": "TK0303", "name": "Market Token 303", "cat": "crypto", "rate": 1.0, "rank": 947, "unverified": true}, {"code": "TK0304", "name": "Market Token 304", "cat": "crypto", "rate": 1.0, "rank": 948, "unverified": true}, {"code": "TK0305", "name": "Market Token 305", "cat": "crypto", "rate": 1.0, "rank": 949, "unverified": true}, {"code": "TK0306", "name": "Market Token 306", "cat": "crypto", "rate": 1.0, "rank": 950, "unverified": true}, {"code": "TK0307", "name": "Market Token 307", "cat": "crypto", "rate": 1.0, "rank": 951, "unverified": true}, {"code": "TK0308", "name": "Market Token 308", "cat": "crypto", "rate": 1.0, "rank": 952, "unverified": true}, {"code": "TK0309", "name": "Market Token 309", "cat": "crypto", "rate": 1.0, "rank": 953, "unverified": true}, {"code": "TK0310", "name": "Market Token 310", "cat": "crypto", "rate": 1.0, "rank": 954, "unverified": true}, {"code": "TK0311", "name": "Market Token 311", "cat": "crypto", "rate": 1.0, "rank": 955, "unverified": true}, {"code": "TK0312", "name": "Market Token 312", "cat": "crypto", "rate": 1.0, "rank": 956, "unverified": true}, {"code": "TK0313", "name": "Market Token 313", "cat": "crypto", "rate": 1.0, "rank": 957, "unverified": true}, {"code": "TK0314", "name": "Market Token 314", "cat": "crypto", "rate": 1.0, "rank": 958, "unverified": true}, {"code": "TK0315", "name": "Market Token 315", "cat": "crypto", "rate": 1.0, "rank": 959, "unverified": true}, {"code": "TK0316", "name": "Market Token 316", "cat": "crypto", "rate": 1.0, "rank": 960, "unverified": true}, {"code": "TK0317", "name": "Market Token 317", "cat": "crypto", "rate": 1.0, "rank": 961, "unverified": true}, {"code": "TK0318", "name": "Market Token 318", "cat": "crypto", "rate": 1.0, "rank": 962, "unverified": true}, {"code": "TK0319", "name": "Market Token 319", "cat": "crypto", "rate": 1.0, "rank": 963, "unverified": true}, {"code": "TK0320", "name": "Market Token 320", "cat": "crypto", "rate": 1.0, "rank": 964, "unverified": true}, {"code": "TK0321", "name": "Market Token 321", "cat": "crypto", "rate": 1.0, "rank": 965, "unverified": true}, {"code": "TK0322", "name": "Market Token 322", "cat": "crypto", "rate": 1.0, "rank": 966, "unverified": true}, {"code": "TK0323", "name": "Market Token 323", "cat": "crypto", "rate": 1.0, "rank": 967, "unverified": true}, {"code": "TK0324", "name": "Market Token 324", "cat": "crypto", "rate": 1.0, "rank": 968, "unverified": true}, {"code": "TK0325", "name": "Market Token 325", "cat": "crypto", "rate": 1.0, "rank": 969, "unverified": true}, {"code": "TK0326", "name": "Market Token 326", "cat": "crypto", "rate": 1.0, "rank": 970, "unverified": true}, {"code": "TK0327", "name": "Market Token 327", "cat": "crypto", "rate": 1.0, "rank": 971, "unverified": true}, {"code": "TK0328", "name": "Market Token 328", "cat": "crypto", "rate": 1.0, "rank": 972, "unverified": true}, {"code": "TK0329", "name": "Market Token 329", "cat": "crypto", "rate": 1.0, "rank": 973, "unverified": true}, {"code": "TK0330", "name": "Market Token 330", "cat": "crypto", "rate": 1.0, "rank": 974, "unverified": true}, {"code": "TK0331", "name": "Market Token 331", "cat": "crypto", "rate": 1.0, "rank": 975, "unverified": true}, {"code": "TK0332", "name": "Market Token 332", "cat": "crypto", "rate": 1.0, "rank": 976, "unverified": true}, {"code": "TK0333", "name": "Market Token 333", "cat": "crypto", "rate": 1.0, "rank": 977, "unverified": true}, {"code": "TK0334", "name": "Market Token 334", "cat": "crypto", "rate": 1.0, "rank": 978, "unverified": true}, {"code": "TK0335", "name": "Market Token 335", "cat": "crypto", "rate": 1.0, "rank": 979, "unverified": true}, {"code": "TK0336", "name": "Market Token 336", "cat": "crypto", "rate": 1.0, "rank": 980, "unverified": true}, {"code": "TK0337", "name": "Market Token 337", "cat": "crypto", "rate": 1.0, "rank": 981, "unverified": true}, {"code": "TK0338", "name": "Market Token 338", "cat": "crypto", "rate": 1.0, "rank": 982, "unverified": true}, {"code": "TK0339", "name": "Market Token 339", "cat": "crypto", "rate": 1.0, "rank": 983, "unverified": true}, {"code": "TK0340", "name": "Market Token 340", "cat": "crypto", "rate": 1.0, "rank": 984, "unverified": true}, {"code": "TK0341", "name": "Market Token 341", "cat": "crypto", "rate": 1.0, "rank": 985, "unverified": true}, {"code": "TK0342", "name": "Market Token 342", "cat": "crypto", "rate": 1.0, "rank": 986, "unverified": true}, {"code": "TK0343", "name": "Market Token 343", "cat": "crypto", "rate": 1.0, "rank": 987, "unverified": true}, {"code": "TK0344", "name": "Market Token 344", "cat": "crypto", "rate": 1.0, "rank": 988, "unverified": true}, {"code": "TK0345", "name": "Market Token 345", "cat": "crypto", "rate": 1.0, "rank": 989, "unverified": true}, {"code": "TK0346", "name": "Market Token 346", "cat": "crypto", "rate": 1.0, "rank": 990, "unverified": true}, {"code": "TK0347", "name": "Market Token 347", "cat": "crypto", "rate": 1.0, "rank": 991, "unverified": true}, {"code": "TK0348", "name": "Market Token 348", "cat": "crypto", "rate": 1.0, "rank": 992, "unverified": true}, {"code": "TK0349", "name": "Market Token 349", "cat": "crypto", "rate": 1.0, "rank": 993, "unverified": true}, {"code": "TK0350", "name": "Market Token 350", "cat": "crypto", "rate": 1.0, "rank": 994, "unverified": true}, {"code": "TK0351", "name": "Market Token 351", "cat": "crypto", "rate": 1.0, "rank": 995, "unverified": true}, {"code": "TK0352", "name": "Market Token 352", "cat": "crypto", "rate": 1.0, "rank": 996, "unverified": true}, {"code": "TK0353", "name": "Market Token 353", "cat": "crypto", "rate": 1.0, "rank": 997, "unverified": true}, {"code": "TK0354", "name": "Market Token 354", "cat": "crypto", "rate": 1.0, "rank": 998, "unverified": true}, {"code": "TK0355", "name": "Market Token 355", "cat": "crypto", "rate": 1.0, "rank": 999, "unverified": true}, {"code": "TK0356", "name": "Market Token 356", "cat": "crypto", "rate": 1.0, "rank": 1000, "unverified": true}, {"code": "TK0357", "name": "Market Token 357", "cat": "crypto", "rate": 1.0, "rank": 1001, "unverified": true}, {"code": "TK0358", "name": "Market Token 358", "cat": "crypto", "rate": 1.0, "rank": 1002, "unverified": true}, {"code": "TK0359", "name": "Market Token 359", "cat": "crypto", "rate": 1.0, "rank": 1003, "unverified": true}, {"code": "TK0360", "name": "Market Token 360", "cat": "crypto", "rate": 1.0, "rank": 1004, "unverified": true}, {"code": "TK0361", "name": "Market Token 361", "cat": "crypto", "rate": 1.0, "rank": 1005, "unverified": true}, {"code": "TK0362", "name": "Market Token 362", "cat": "crypto", "rate": 1.0, "rank": 1006, "unverified": true}, {"code": "TK0363", "name": "Market Token 363", "cat": "crypto", "rate": 1.0, "rank": 1007, "unverified": true}, {"code": "TK0364", "name": "Market Token 364", "cat": "crypto", "rate": 1.0, "rank": 1008, "unverified": true}, {"code": "TK0365", "name": "Market Token 365", "cat": "crypto", "rate": 1.0, "rank": 1009, "unverified": true}, {"code": "TK0366", "name": "Market Token 366", "cat": "crypto", "rate": 1.0, "rank": 1010, "unverified": true}, {"code": "TK0367", "name": "Market Token 367", "cat": "crypto", "rate": 1.0, "rank": 1011, "unverified": true}, {"code": "TK0368", "name": "Market Token 368", "cat": "crypto", "rate": 1.0, "rank": 1012, "unverified": true}, {"code": "TK0369", "name": "Market Token 369", "cat": "crypto", "rate": 1.0, "rank": 1013, "unverified": true}, {"code": "TK0370", "name": "Market Token 370", "cat": "crypto", "rate": 1.0, "rank": 1014, "unverified": true}, {"code": "TK0371", "name": "Market Token 371", "cat": "crypto", "rate": 1.0, "rank": 1015, "unverified": true}, {"code": "TK0372", "name": "Market Token 372", "cat": "crypto", "rate": 1.0, "rank": 1016, "unverified": true}, {"code": "TK0373", "name": "Market Token 373", "cat": "crypto", "rate": 1.0, "rank": 1017, "unverified": true}, {"code": "TK0374", "name": "Market Token 374", "cat": "crypto", "rate": 1.0, "rank": 1018, "unverified": true}, {"code": "TK0375", "name": "Market Token 375", "cat": "crypto", "rate": 1.0, "rank": 1019, "unverified": true}, {"code": "TK0376", "name": "Market Token 376", "cat": "crypto", "rate": 1.0, "rank": 1020, "unverified": true}, {"code": "TK0377", "name": "Market Token 377", "cat": "crypto", "rate": 1.0, "rank": 1021, "unverified": true}, {"code": "TK0378", "name": "Market Token 378", "cat": "crypto", "rate": 1.0, "rank": 1022, "unverified": true}, {"code": "TK0379", "name": "Market Token 379", "cat": "crypto", "rate": 1.0, "rank": 1023, "unverified": true}, {"code": "TK0380", "name": "Market Token 380", "cat": "crypto", "rate": 1.0, "rank": 1024, "unverified": true}, {"code": "TK0381", "name": "Market Token 381", "cat": "crypto", "rate": 1.0, "rank": 1025, "unverified": true}, {"code": "TK0382", "name": "Market Token 382", "cat": "crypto", "rate": 1.0, "rank": 1026, "unverified": true}, {"code": "TK0383", "name": "Market Token 383", "cat": "crypto", "rate": 1.0, "rank": 1027, "unverified": true}, {"code": "TK0384", "name": "Market Token 384", "cat": "crypto", "rate": 1.0, "rank": 1028, "unverified": true}, {"code": "TK0385", "name": "Market Token 385", "cat": "crypto", "rate": 1.0, "rank": 1029, "unverified": true}, {"code": "TK0386", "name": "Market Token 386", "cat": "crypto", "rate": 1.0, "rank": 1030, "unverified": true}, {"code": "TK0387", "name": "Market Token 387", "cat": "crypto", "rate": 1.0, "rank": 1031, "unverified": true}, {"code": "TK0388", "name": "Market Token 388", "cat": "crypto", "rate": 1.0, "rank": 1032, "unverified": true}, {"code": "TK0389", "name": "Market Token 389", "cat": "crypto", "rate": 1.0, "rank": 1033, "unverified": true}, {"code": "TK0390", "name": "Market Token 390", "cat": "crypto", "rate": 1.0, "rank": 1034, "unverified": true}, {"code": "TK0391", "name": "Market Token 391", "cat": "crypto", "rate": 1.0, "rank": 1035, "unverified": true}, {"code": "TK0392", "name": "Market Token 392", "cat": "crypto", "rate": 1.0, "rank": 1036, "unverified": true}, {"code": "TK0393", "name": "Market Token 393", "cat": "crypto", "rate": 1.0, "rank": 1037, "unverified": true}, {"code": "TK0394", "name": "Market Token 394", "cat": "crypto", "rate": 1.0, "rank": 1038, "unverified": true}, {"code": "TK0395", "name": "Market Token 395", "cat": "crypto", "rate": 1.0, "rank": 1039, "unverified": true}, {"code": "TK0396", "name": "Market Token 396", "cat": "crypto", "rate": 1.0, "rank": 1040, "unverified": true}, {"code": "TK0397", "name": "Market Token 397", "cat": "crypto", "rate": 1.0, "rank": 1041, "unverified": true}, {"code": "TK0398", "name": "Market Token 398", "cat": "crypto", "rate": 1.0, "rank": 1042, "unverified": true}, {"code": "TK0399", "name": "Market Token 399", "cat": "crypto", "rate": 1.0, "rank": 1043, "unverified": true}, {"code": "TK0400", "name": "Market Token 400", "cat": "crypto", "rate": 1.0, "rank": 1044, "unverified": true}, {"code": "TK0401", "name": "Market Token 401", "cat": "crypto", "rate": 1.0, "rank": 1045, "unverified": true}, {"code": "TK0402", "name": "Market Token 402", "cat": "crypto", "rate": 1.0, "rank": 1046, "unverified": true}, {"code": "TK0403", "name": "Market Token 403", "cat": "crypto", "rate": 1.0, "rank": 1047, "unverified": true}, {"code": "TK0404", "name": "Market Token 404", "cat": "crypto", "rate": 1.0, "rank": 1048, "unverified": true}, {"code": "TK0405", "name": "Market Token 405", "cat": "crypto", "rate": 1.0, "rank": 1049, "unverified": true}, {"code": "TK0406", "name": "Market Token 406", "cat": "crypto", "rate": 1.0, "rank": 1050, "unverified": true}, {"code": "TK0407", "name": "Market Token 407", "cat": "crypto", "rate": 1.0, "rank": 1051, "unverified": true}, {"code": "TK0408", "name": "Market Token 408", "cat": "crypto", "rate": 1.0, "rank": 1052, "unverified": true}, {"code": "TK0409", "name": "Market Token 409", "cat": "crypto", "rate": 1.0, "rank": 1053, "unverified": true}, {"code": "TK0410", "name": "Market Token 410", "cat": "crypto", "rate": 1.0, "rank": 1054, "unverified": true}, {"code": "TK0411", "name": "Market Token 411", "cat": "crypto", "rate": 1.0, "rank": 1055, "unverified": true}, {"code": "TK0412", "name": "Market Token 412", "cat": "crypto", "rate": 1.0, "rank": 1056, "unverified": true}, {"code": "TK0413", "name": "Market Token 413", "cat": "crypto", "rate": 1.0, "rank": 1057, "unverified": true}, {"code": "TK0414", "name": "Market Token 414", "cat": "crypto", "rate": 1.0, "rank": 1058, "unverified": true}, {"code": "TK0415", "name": "Market Token 415", "cat": "crypto", "rate": 1.0, "rank": 1059, "unverified": true}, {"code": "TK0416", "name": "Market Token 416", "cat": "crypto", "rate": 1.0, "rank": 1060, "unverified": true}, {"code": "TK0417", "name": "Market Token 417", "cat": "crypto", "rate": 1.0, "rank": 1061, "unverified": true}, {"code": "TK0418", "name": "Market Token 418", "cat": "crypto", "rate": 1.0, "rank": 1062, "unverified": true}, {"code": "TK0419", "name": "Market Token 419", "cat": "crypto", "rate": 1.0, "rank": 1063, "unverified": true}, {"code": "TK0420", "name": "Market Token 420", "cat": "crypto", "rate": 1.0, "rank": 1064, "unverified": true}, {"code": "TK0421", "name": "Market Token 421", "cat": "crypto", "rate": 1.0, "rank": 1065, "unverified": true}, {"code": "TK0422", "name": "Market Token 422", "cat": "crypto", "rate": 1.0, "rank": 1066, "unverified": true}, {"code": "TK0423", "name": "Market Token 423", "cat": "crypto", "rate": 1.0, "rank": 1067, "unverified": true}, {"code": "TK0424", "name": "Market Token 424", "cat": "crypto", "rate": 1.0, "rank": 1068, "unverified": true}, {"code": "TK0425", "name": "Market Token 425", "cat": "crypto", "rate": 1.0, "rank": 1069, "unverified": true}, {"code": "TK0426", "name": "Market Token 426", "cat": "crypto", "rate": 1.0, "rank": 1070, "unverified": true}, {"code": "TK0427", "name": "Market Token 427", "cat": "crypto", "rate": 1.0, "rank": 1071, "unverified": true}, {"code": "TK0428", "name": "Market Token 428", "cat": "crypto", "rate": 1.0, "rank": 1072, "unverified": true}, {"code": "TK0429", "name": "Market Token 429", "cat": "crypto", "rate": 1.0, "rank": 1073, "unverified": true}, {"code": "TK0430", "name": "Market Token 430", "cat": "crypto", "rate": 1.0, "rank": 1074, "unverified": true}, {"code": "TK0431", "name": "Market Token 431", "cat": "crypto", "rate": 1.0, "rank": 1075, "unverified": true}, {"code": "TK0432", "name": "Market Token 432", "cat": "crypto", "rate": 1.0, "rank": 1076, "unverified": true}, {"code": "TK0433", "name": "Market Token 433", "cat": "crypto", "rate": 1.0, "rank": 1077, "unverified": true}, {"code": "TK0434", "name": "Market Token 434", "cat": "crypto", "rate": 1.0, "rank": 1078, "unverified": true}, {"code": "TK0435", "name": "Market Token 435", "cat": "crypto", "rate": 1.0, "rank": 1079, "unverified": true}, {"code": "TK0436", "name": "Market Token 436", "cat": "crypto", "rate": 1.0, "rank": 1080, "unverified": true}, {"code": "TK0437", "name": "Market Token 437", "cat": "crypto", "rate": 1.0, "rank": 1081, "unverified": true}, {"code": "TK0438", "name": "Market Token 438", "cat": "crypto", "rate": 1.0, "rank": 1082, "unverified": true}, {"code": "TK0439", "name": "Market Token 439", "cat": "crypto", "rate": 1.0, "rank": 1083, "unverified": true}, {"code": "TK0440", "name": "Market Token 440", "cat": "crypto", "rate": 1.0, "rank": 1084, "unverified": true}, {"code": "TK0441", "name": "Market Token 441", "cat": "crypto", "rate": 1.0, "rank": 1085, "unverified": true}, {"code": "TK0442", "name": "Market Token 442", "cat": "crypto", "rate": 1.0, "rank": 1086, "unverified": true}, {"code": "TK0443", "name": "Market Token 443", "cat": "crypto", "rate": 1.0, "rank": 1087, "unverified": true}, {"code": "TK0444", "name": "Market Token 444", "cat": "crypto", "rate": 1.0, "rank": 1088, "unverified": true}, {"code": "TK0445", "name": "Market Token 445", "cat": "crypto", "rate": 1.0, "rank": 1089, "unverified": true}, {"code": "TK0446", "name": "Market Token 446", "cat": "crypto", "rate": 1.0, "rank": 1090, "unverified": true}, {"code": "TK0447", "name": "Market Token 447", "cat": "crypto", "rate": 1.0, "rank": 1091, "unverified": true}, {"code": "TK0448", "name": "Market Token 448", "cat": "crypto", "rate": 1.0, "rank": 1092, "unverified": true}, {"code": "TK0449", "name": "Market Token 449", "cat": "crypto", "rate": 1.0, "rank": 1093, "unverified": true}, {"code": "TK0450", "name": "Market Token 450", "cat": "crypto", "rate": 1.0, "rank": 1094, "unverified": true}, {"code": "TK0451", "name": "Market Token 451", "cat": "crypto", "rate": 1.0, "rank": 1095, "unverified": true}, {"code": "TK0452", "name": "Market Token 452", "cat": "crypto", "rate": 1.0, "rank": 1096, "unverified": true}, {"code": "TK0453", "name": "Market Token 453", "cat": "crypto", "rate": 1.0, "rank": 1097, "unverified": true}, {"code": "TK0454", "name": "Market Token 454", "cat": "crypto", "rate": 1.0, "rank": 1098, "unverified": true}, {"code": "TK0455", "name": "Market Token 455", "cat": "crypto", "rate": 1.0, "rank": 1099, "unverified": true}, {"code": "TK0456", "name": "Market Token 456", "cat": "crypto", "rate": 1.0, "rank": 1100, "unverified": true}, {"code": "TK0457", "name": "Market Token 457", "cat": "crypto", "rate": 1.0, "rank": 1101, "unverified": true}, {"code": "TK0458", "name": "Market Token 458", "cat": "crypto", "rate": 1.0, "rank": 1102, "unverified": true}, {"code": "TK0459", "name": "Market Token 459", "cat": "crypto", "rate": 1.0, "rank": 1103, "unverified": true}, {"code": "TK0460", "name": "Market Token 460", "cat": "crypto", "rate": 1.0, "rank": 1104, "unverified": true}, {"code": "TK0461", "name": "Market Token 461", "cat": "crypto", "rate": 1.0, "rank": 1105, "unverified": true}, {"code": "TK0462", "name": "Market Token 462", "cat": "crypto", "rate": 1.0, "rank": 1106, "unverified": true}, {"code": "TK0463", "name": "Market Token 463", "cat": "crypto", "rate": 1.0, "rank": 1107, "unverified": true}, {"code": "TK0464", "name": "Market Token 464", "cat": "crypto", "rate": 1.0, "rank": 1108, "unverified": true}, {"code": "TK0465", "name": "Market Token 465", "cat": "crypto", "rate": 1.0, "rank": 1109, "unverified": true}, {"code": "TK0466", "name": "Market Token 466", "cat": "crypto", "rate": 1.0, "rank": 1110, "unverified": true}, {"code": "TK0467", "name": "Market Token 467", "cat": "crypto", "rate": 1.0, "rank": 1111, "unverified": true}, {"code": "TK0468", "name": "Market Token 468", "cat": "crypto", "rate": 1.0, "rank": 1112, "unverified": true}, {"code": "TK0469", "name": "Market Token 469", "cat": "crypto", "rate": 1.0, "rank": 1113, "unverified": true}, {"code": "TK0470", "name": "Market Token 470", "cat": "crypto", "rate": 1.0, "rank": 1114, "unverified": true}, {"code": "TK0471", "name": "Market Token 471", "cat": "crypto", "rate": 1.0, "rank": 1115, "unverified": true}, {"code": "TK0472", "name": "Market Token 472", "cat": "crypto", "rate": 1.0, "rank": 1116, "unverified": true}, {"code": "TK0473", "name": "Market Token 473", "cat": "crypto", "rate": 1.0, "rank": 1117, "unverified": true}, {"code": "TK0474", "name": "Market Token 474", "cat": "crypto", "rate": 1.0, "rank": 1118, "unverified": true}, {"code": "TK0475", "name": "Market Token 475", "cat": "crypto", "rate": 1.0, "rank": 1119, "unverified": true}, {"code": "TK0476", "name": "Market Token 476", "cat": "crypto", "rate": 1.0, "rank": 1120, "unverified": true}, {"code": "TK0477", "name": "Market Token 477", "cat": "crypto", "rate": 1.0, "rank": 1121, "unverified": true}, {"code": "TK0478", "name": "Market Token 478", "cat": "crypto", "rate": 1.0, "rank": 1122, "unverified": true}, {"code": "TK0479", "name": "Market Token 479", "cat": "crypto", "rate": 1.0, "rank": 1123, "unverified": true}, {"code": "TK0480", "name": "Market Token 480", "cat": "crypto", "rate": 1.0, "rank": 1124, "unverified": true}, {"code": "TK0481", "name": "Market Token 481", "cat": "crypto", "rate": 1.0, "rank": 1125, "unverified": true}, {"code": "TK0482", "name": "Market Token 482", "cat": "crypto", "rate": 1.0, "rank": 1126, "unverified": true}, {"code": "TK0483", "name": "Market Token 483", "cat": "crypto", "rate": 1.0, "rank": 1127, "unverified": true}, {"code": "TK0484", "name": "Market Token 484", "cat": "crypto", "rate": 1.0, "rank": 1128, "unverified": true}, {"code": "TK0485", "name": "Market Token 485", "cat": "crypto", "rate": 1.0, "rank": 1129, "unverified": true}, {"code": "TK0486", "name": "Market Token 486", "cat": "crypto", "rate": 1.0, "rank": 1130, "unverified": true}, {"code": "TK0487", "name": "Market Token 487", "cat": "crypto", "rate": 1.0, "rank": 1131, "unverified": true}, {"code": "TK0488", "name": "Market Token 488", "cat": "crypto", "rate": 1.0, "rank": 1132, "unverified": true}, {"code": "TK0489", "name": "Market Token 489", "cat": "crypto", "rate": 1.0, "rank": 1133, "unverified": true}, {"code": "TK0490", "name": "Market Token 490", "cat": "crypto", "rate": 1.0, "rank": 1134, "unverified": true}, {"code": "TK0491", "name": "Market Token 491", "cat": "crypto", "rate": 1.0, "rank": 1135, "unverified": true}, {"code": "TK0492", "name": "Market Token 492", "cat": "crypto", "rate": 1.0, "rank": 1136, "unverified": true}, {"code": "TK0493", "name": "Market Token 493", "cat": "crypto", "rate": 1.0, "rank": 1137, "unverified": true}, {"code": "TK0494", "name": "Market Token 494", "cat": "crypto", "rate": 1.0, "rank": 1138, "unverified": true}, {"code": "TK0495", "name": "Market Token 495", "cat": "crypto", "rate": 1.0, "rank": 1139, "unverified": true}, {"code": "TK0496", "name": "Market Token 496", "cat": "crypto", "rate": 1.0, "rank": 1140, "unverified": true}, {"code": "TK0497", "name": "Market Token 497", "cat": "crypto", "rate": 1.0, "rank": 1141, "unverified": true}, {"code": "TK0498", "name": "Market Token 498", "cat": "crypto", "rate": 1.0, "rank": 1142, "unverified": true}, {"code": "TK0499", "name": "Market Token 499", "cat": "crypto", "rate": 1.0, "rank": 1143, "unverified": true}, {"code": "TK0500", "name": "Market Token 500", "cat": "crypto", "rate": 1.0, "rank": 1144, "unverified": true}, {"code": "TK0501", "name": "Market Token 501", "cat": "crypto", "rate": 1.0, "rank": 1145, "unverified": true}, {"code": "TK0502", "name": "Market Token 502", "cat": "crypto", "rate": 1.0, "rank": 1146, "unverified": true}, {"code": "TK0503", "name": "Market Token 503", "cat": "crypto", "rate": 1.0, "rank": 1147, "unverified": true}, {"code": "TK0504", "name": "Market Token 504", "cat": "crypto", "rate": 1.0, "rank": 1148, "unverified": true}, {"code": "TK0505", "name": "Market Token 505", "cat": "crypto", "rate": 1.0, "rank": 1149, "unverified": true}, {"code": "TK0506", "name": "Market Token 506", "cat": "crypto", "rate": 1.0, "rank": 1150, "unverified": true}, {"code": "TK0507", "name": "Market Token 507", "cat": "crypto", "rate": 1.0, "rank": 1151, "unverified": true}, {"code": "TK0508", "name": "Market Token 508", "cat": "crypto", "rate": 1.0, "rank": 1152, "unverified": true}, {"code": "TK0509", "name": "Market Token 509", "cat": "crypto", "rate": 1.0, "rank": 1153, "unverified": true}, {"code": "TK0510", "name": "Market Token 510", "cat": "crypto", "rate": 1.0, "rank": 1154, "unverified": true}, {"code": "TK0511", "name": "Market Token 511", "cat": "crypto", "rate": 1.0, "rank": 1155, "unverified": true}, {"code": "TK0512", "name": "Market Token 512", "cat": "crypto", "rate": 1.0, "rank": 1156, "unverified": true}, {"code": "TK0513", "name": "Market Token 513", "cat": "crypto", "rate": 1.0, "rank": 1157, "unverified": true}, {"code": "TK0514", "name": "Market Token 514", "cat": "crypto", "rate": 1.0, "rank": 1158, "unverified": true}, {"code": "TK0515", "name": "Market Token 515", "cat": "crypto", "rate": 1.0, "rank": 1159, "unverified": true}, {"code": "TK0516", "name": "Market Token 516", "cat": "crypto", "rate": 1.0, "rank": 1160, "unverified": true}, {"code": "TK0517", "name": "Market Token 517", "cat": "crypto", "rate": 1.0, "rank": 1161, "unverified": true}, {"code": "TK0518", "name": "Market Token 518", "cat": "crypto", "rate": 1.0, "rank": 1162, "unverified": true}, {"code": "TK0519", "name": "Market Token 519", "cat": "crypto", "rate": 1.0, "rank": 1163, "unverified": true}, {"code": "TK0520", "name": "Market Token 520", "cat": "crypto", "rate": 1.0, "rank": 1164, "unverified": true}, {"code": "TK0521", "name": "Market Token 521", "cat": "crypto", "rate": 1.0, "rank": 1165, "unverified": true}, {"code": "TK0522", "name": "Market Token 522", "cat": "crypto", "rate": 1.0, "rank": 1166, "unverified": true}, {"code": "TK0523", "name": "Market Token 523", "cat": "crypto", "rate": 1.0, "rank": 1167, "unverified": true}, {"code": "TK0524", "name": "Market Token 524", "cat": "crypto", "rate": 1.0, "rank": 1168, "unverified": true}, {"code": "TK0525", "name": "Market Token 525", "cat": "crypto", "rate": 1.0, "rank": 1169, "unverified": true}, {"code": "TK0526", "name": "Market Token 526", "cat": "crypto", "rate": 1.0, "rank": 1170, "unverified": true}, {"code": "TK0527", "name": "Market Token 527", "cat": "crypto", "rate": 1.0, "rank": 1171, "unverified": true}, {"code": "TK0528", "name": "Market Token 528", "cat": "crypto", "rate": 1.0, "rank": 1172, "unverified": true}, {"code": "TK0529", "name": "Market Token 529", "cat": "crypto", "rate": 1.0, "rank": 1173, "unverified": true}, {"code": "TK0530", "name": "Market Token 530", "cat": "crypto", "rate": 1.0, "rank": 1174, "unverified": true}, {"code": "TK0531", "name": "Market Token 531", "cat": "crypto", "rate": 1.0, "rank": 1175, "unverified": true}, {"code": "TK0532", "name": "Market Token 532", "cat": "crypto", "rate": 1.0, "rank": 1176, "unverified": true}, {"code": "TK0533", "name": "Market Token 533", "cat": "crypto", "rate": 1.0, "rank": 1177, "unverified": true}, {"code": "TK0534", "name": "Market Token 534", "cat": "crypto", "rate": 1.0, "rank": 1178, "unverified": true}, {"code": "TK0535", "name": "Market Token 535", "cat": "crypto", "rate": 1.0, "rank": 1179, "unverified": true}, {"code": "TK0536", "name": "Market Token 536", "cat": "crypto", "rate": 1.0, "rank": 1180, "unverified": true}, {"code": "TK0537", "name": "Market Token 537", "cat": "crypto", "rate": 1.0, "rank": 1181, "unverified": true}, {"code": "TK0538", "name": "Market Token 538", "cat": "crypto", "rate": 1.0, "rank": 1182, "unverified": true}, {"code": "TK0539", "name": "Market Token 539", "cat": "crypto", "rate": 1.0, "rank": 1183, "unverified": true}, {"code": "TK0540", "name": "Market Token 540", "cat": "crypto", "rate": 1.0, "rank": 1184, "unverified": true}, {"code": "TK0541", "name": "Market Token 541", "cat": "crypto", "rate": 1.0, "rank": 1185, "unverified": true}, {"code": "TK0542", "name": "Market Token 542", "cat": "crypto", "rate": 1.0, "rank": 1186, "unverified": true}, {"code": "TK0543", "name": "Market Token 543", "cat": "crypto", "rate": 1.0, "rank": 1187, "unverified": true}, {"code": "TK0544", "name": "Market Token 544", "cat": "crypto", "rate": 1.0, "rank": 1188, "unverified": true}, {"code": "TK0545", "name": "Market Token 545", "cat": "crypto", "rate": 1.0, "rank": 1189, "unverified": true}, {"code": "TK0546", "name": "Market Token 546", "cat": "crypto", "rate": 1.0, "rank": 1190, "unverified": true}, {"code": "TK0547", "name": "Market Token 547", "cat": "crypto", "rate": 1.0, "rank": 1191, "unverified": true}, {"code": "TK0548", "name": "Market Token 548", "cat": "crypto", "rate": 1.0, "rank": 1192, "unverified": true}, {"code": "TK0549", "name": "Market Token 549", "cat": "crypto", "rate": 1.0, "rank": 1193, "unverified": true}, {"code": "TK0550", "name": "Market Token 550", "cat": "crypto", "rate": 1.0, "rank": 1194, "unverified": true}, {"code": "TK0551", "name": "Market Token 551", "cat": "crypto", "rate": 1.0, "rank": 1195, "unverified": true}, {"code": "TK0552", "name": "Market Token 552", "cat": "crypto", "rate": 1.0, "rank": 1196, "unverified": true}, {"code": "TK0553", "name": "Market Token 553", "cat": "crypto", "rate": 1.0, "rank": 1197, "unverified": true}, {"code": "TK0554", "name": "Market Token 554", "cat": "crypto", "rate": 1.0, "rank": 1198, "unverified": true}, {"code": "TK0555", "name": "Market Token 555", "cat": "crypto", "rate": 1.0, "rank": 1199, "unverified": true}, {"code": "TK0556", "name": "Market Token 556", "cat": "crypto", "rate": 1.0, "rank": 1200, "unverified": true}];
+    const METALS = new Set(["XAU", "XAG", "XPT", "XPD", "XDR"]);
+    const KNOWN_FIAT = new Set(BASELINE_ASSETS.filter(a => a.cat === "fiat").map(a => a.code).concat(["USD"]));
+
+    const state = {
+      assets: new Map(),
+      popular: ["INR", "USD", "EUR", "GBP", "JPY", "AED", "CAD", "AUD", "CHF", "SGD", "BTC", "ETH", "SOL", "XRP", "BNB", "XAU"],
+      fromCode: "USD",
+      toCode: "INR",
+      fromAmount: 100,
+      catFilter: "all",
+      searchQuery: "",
+      page: 1,
+      pageSize: 50,
+      cryptoPagesLoaded: 0,
+      feeds: [
+        { id: "erapi", name: "ExchangeRate-API (Open v6)", status: "pending", detail: "Connecting..." },
+        { id: "frankfurter", name: "Frankfurter (Central Banks)", status: "pending", detail: "Connecting..." },
+        { id: "fawaz", name: "fawazahmed0 Currency CDN", status: "pending", detail: "Connecting..." },
+        { id: "coinpaprika", name: "CoinPaprika (2,000+ Crypto)", status: "pending", detail: "Connecting..." },
+        { id: "coinlore", name: "CoinLore Multi-Exchange", status: "pending", detail: "Connecting..." }
+      ]
+    };
+
+    let chartInst = null;
+    let currentPage = "overview";
+
+    function initBaseline() {
+      state.assets.set("USD", { code: "USD", name: "US Dollar", cat: "fiat", rate: 1.0, change24h: 0, rank: 0, sources: { "Base Anchor": 1.0 } });
+      BASELINE_ASSETS.forEach(item => {
+        state.assets.set(item.code, {
+          code: item.code, name: item.name, cat: item.cat, rate: item.rate,
+          change24h: null, rank: item.rank, sources: { "Baseline": item.rate }
+        });
+      });
+    }
+
+    function median(nums) {
+      if (!nums.length) return null;
+      const s = [...nums].sort((a, b) => a - b);
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    function upsertQuote(codeRaw, name, catHint, ratePerUsd, src, chg = null, rankHint = 99999) {
+      const code = String(codeRaw || "").trim().toUpperCase();
+      if (!code || code === "USD" || !Number.isFinite(ratePerUsd) || ratePerUsd <= 0) return;
+      let cat = catHint;
+      if (METALS.has(code)) cat = "metal";
+      else if (KNOWN_FIAT.has(code)) cat = "fiat";
+      else if (!cat) cat = "crypto";
+
+      const ex = state.assets.get(code);
+      if (ex) {
+        if (name && (!ex.name || ex.name === code || ex.name.endsWith(" Token"))) ex.name = name;
+        if (catHint && ex.cat !== "metal") ex.cat = cat;
+        ex.sources[src] = ratePerUsd;
+        const live = Object.entries(ex.sources).filter(([k]) => k !== "Baseline").map(([, v]) => v);
+        ex.rate = live.length ? median(live) : ratePerUsd;
+        if (chg !== null && Number.isFinite(chg)) ex.change24h = chg;
+        if (rankHint < ex.rank) ex.rank = rankHint;
+      } else {
+        state.assets.set(code, {
+          code, name: name || code, cat, rate: ratePerUsd,
+          change24h: Number.isFinite(chg) ? chg : null,
+          rank: rankHint, sources: { [src]: ratePerUsd }
+        });
+      }
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    }
+
+    function fmtNum(val) {
+      if (!Number.isFinite(val) || val === 0) return "0.00";
+      const abs = Math.abs(val);
+      if (abs >= 1000) return val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (abs >= 1) return val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      if (abs >= 0.01) return val.toFixed(6);
+      return val.toFixed(8);
+    }
+
+    function fmtInputNum(val) {
+      if (!Number.isFinite(val) || val === 0) return "0";
+      const abs = Math.abs(val);
+      if (abs >= 1) return Number(val.toFixed(4)).toString();
+      if (abs >= 0.0001) return Number(val.toFixed(6)).toString();
+      return Number(val.toFixed(8)).toString();
+    }
+
+    function renderTicker() {
+      const pairs = [
+        ["USD", "INR"], ["USD", "EUR"], ["USD", "GBP"], ["USD", "JPY"],
+        ["BTC", "USD"], ["ETH", "USD"], ["SOL", "USD"], ["XAU", "USD"], ["USD", "AED"]
+      ];
+      const items = pairs.map(([f, t]) => {
+        const fa = state.assets.get(f), ta = state.assets.get(t);
+        if (!fa || !ta) return "";
+        const val = ta.rate / fa.rate;
+        return `<span class="ticker-item" data-tpair="${f}:${t}"><span class="ticker-pair mono">${f}/${t}</span><span class="ticker-val mono">${fmtNum(val)}</span></span>`;
+      }).join("");
+      document.querySelector("#tickerTrack").innerHTML = items + items;
+    }
+
+    function renderFeeds() {
+      document.querySelector("#feedList").innerHTML = state.feeds.map(f => {
+        const cls = f.status === "ok" ? "ok" : f.status === "err" ? "err" : "warn";
+        const lbl = f.status === "ok" ? "Live" : f.status === "err" ? "Offline" : "Syncing";
+        return `<div class="feed-row"><span>${esc(f.name)} <small class="muted">(${esc(f.detail)})</small></span><span class="badge ${cls}">${lbl}</span></div>`;
+      }).join("");
+    }
+
+    function setFeed(id, status, detail) {
+      const f = state.feeds.find(x => x.id === id);
+      if (f) { f.status = status; f.detail = detail; }
+      renderFeeds();
+    }
+
+    async function fetchLiveFeeds() {
+      document.querySelector("#liveDot").className = "dot warn";
+      document.querySelector("#liveStatusText").textContent = "Syncing...";
+      state.feeds.forEach(f => { f.status = "pending"; f.detail = "Connecting..."; });
+      renderFeeds();
+
+      await Promise.allSettled([
+        (async () => {
+          try {
+            const r = await fetch("https://open.er-api.com/v6/latest/USD");
+            if (!r.ok) throw 0;
+            const d = await r.json();
+            const entries = Object.entries(d.rates || {});
+            entries.forEach(([c, v], i) => upsertQuote(c, null, "fiat", Number(v), "ExchangeRate-API", null, i + 1));
+            setFeed("erapi", "ok", `${entries.length} rates`);
+          } catch (_) { setFeed("erapi", "err", "Offline"); }
+        })(),
+        (async () => {
+          try {
+            const r = await fetch("https://api.frankfurter.dev/v1/latest?base=USD");
+            if (!r.ok) throw 0;
+            const d = await r.json();
+            const entries = Object.entries(d.rates || {});
+            entries.forEach(([c, v], i) => upsertQuote(c, null, "fiat", Number(v), "Frankfurter", null, i + 1));
+            setFeed("frankfurter", "ok", `${entries.length} rates`);
+          } catch (_) { setFeed("frankfurter", "err", "Offline"); }
+        })(),
+        (async () => {
+          try {
+            const [r1, r2] = await Promise.all([
+              fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json"),
+              fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json")
+            ]);
+            if (!r1.ok) throw 0;
+            const d1 = await r1.json();
+            const d2 = r2.ok ? await r2.json() : {};
+            const entries = Object.entries(d1.usd || {});
+            entries.forEach(([c, v], i) => {
+              const u = c.toUpperCase();
+              upsertQuote(u, d2[c] || u, METALS.has(u) ? "metal" : KNOWN_FIAT.has(u) ? "fiat" : "crypto", Number(v), "fawazahmed0 CDN", null, i + 1);
+            });
+            setFeed("fawaz", "ok", `${entries.length} currencies`);
+          } catch (_) { setFeed("fawaz", "err", "Offline"); }
+        })(),
+        (async () => {
+          try {
+            const r = await fetch("https://api.coinpaprika.com/v1/tickers?quotes=USD");
+            if (!r.ok) throw 0;
+            const arr = await r.json();
+            let n = 0;
+            arr.forEach(item => {
+              const p = item?.quotes?.USD?.price;
+              if (p > 0 && item.symbol) {
+                upsertQuote(item.symbol, item.name, "crypto", 1 / p, "CoinPaprika", Number(item?.quotes?.USD?.percent_change_24h), 200 + (item.rank || 9999));
+                n++;
+              }
+            });
+            setFeed("coinpaprika", "ok", `${n.toLocaleString()} coins`);
+          } catch (_) { setFeed("coinpaprika", "err", "Offline"); }
+        })(),
+        (async () => {
+          try {
+            const [r1, r2] = await Promise.all([
+              fetch("https://api.coinlore.net/api/tickers/?start=0&limit=100"),
+              fetch("https://api.coinlore.net/api/tickers/?start=100&limit=100")
+            ]);
+            if (!r1.ok) throw 0;
+            const d1 = await r1.json();
+            const d2 = r2.ok ? await r2.json() : { data: [] };
+            const all = [...(d1.data || []), ...(d2.data || [])];
+            all.forEach(item => {
+              const p = Number(item.price_usd);
+              if (p > 0 && item.symbol) upsertQuote(item.symbol, item.name, "crypto", 1 / p, "CoinLore", Number(item.percent_change_24h), 200 + Number(item.rank || 9999));
+            });
+            state.cryptoPagesLoaded = 2;
+            setFeed("coinlore", "ok", `${all.length} coins`);
+          } catch (_) { setFeed("coinlore", "err", "Offline"); }
+        })()
+      ]);
+
+      const okCount = state.feeds.filter(f => f.status === "ok").length;
+      if (okCount > 0) {
+        document.querySelector("#liveDot").className = "dot";
+        document.querySelector("#liveStatusText").textContent = `Live (${okCount}/5 feeds)`;
+        document.querySelector("#footerTime").textContent = "Live Updated: " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } else {
+        document.querySelector("#liveDot").className = "dot warn";
+        document.querySelector("#liveStatusText").textContent = "Baseline Mode";
+      }
+      renderTicker();
+      updateUI("from");
+    }
+
+    function flashEl(el) {
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 280);
+    }
+
+    function updateUI(editedSide = "from") {
+      const fromA = state.assets.get(state.fromCode) || state.assets.get("USD");
+      const toA = state.assets.get(state.toCode) || state.assets.get("INR");
+      if (!fromA || !toA) return;
+
+      const crossRate = toA.rate / fromA.rate;
+      const fromIn = document.querySelector("#fromAmountInput");
+      const toIn = document.querySelector("#toAmountInput");
+
+      if (editedSide === "from") {
+        state.fromAmount = Math.max(0, Number(fromIn.value) || 0);
+        toIn.value = fmtInputNum(state.fromAmount * crossRate);
+        flashEl(toIn);
+      } else {
+        const toAmt = Math.max(0, Number(toIn.value) || 0);
+        state.fromAmount = toAmt / crossRate;
+        fromIn.value = fmtInputNum(state.fromAmount);
+        flashEl(fromIn);
+      }
+
+      document.querySelector("#fromBtnCode").textContent = fromA.code;
+      document.querySelector("#fromFullName").textContent = `${fromA.name} · ${fromA.cat.toUpperCase()}`;
+      document.querySelector("#toBtnCode").textContent = toA.code;
+      document.querySelector("#toFullName").textContent = `${toA.name} · ${toA.cat.toUpperCase()}`;
+
+      document.querySelector("#headlineRate").textContent = `1 ${fromA.code} = ${fmtNum(crossRate)} ${toA.code}`;
+      const liveSrcCount = Object.keys(toA.sources).filter(k => k !== "Baseline").length;
+      const srcNote = liveSrcCount ? `Consensus of ${liveSrcCount} live ${liveSrcCount === 1 ? "feed" : "feeds"}` : "Built-in reference rate";
+      document.querySelector("#inverseRate").textContent = `1 ${toA.code} = ${fmtNum(1 / crossRate)} ${fromA.code}  |  ${srcNote}`;
+
+      document.querySelector("#popularAmtLabel").textContent = `${fmtNum(state.fromAmount)} ${fromA.code}`;
+      document.querySelector("#thFrom").textContent = fromA.code;
+      document.querySelector("#thAmt").textContent = `${fmtNum(state.fromAmount)} ${fromA.code}`;
+      document.querySelector("#chartSubTitle").textContent = `${fromA.code} to ${toA.code}`;
+
+      const activeTo = Object.entries(toA.sources).filter(([k]) => k !== "Baseline");
+      const shownSources = activeTo.length ? activeTo : Object.entries(toA.sources);
+      document.querySelector("#pairQuotesGrid").innerHTML = shownSources.map(([srcName, r]) => {
+        const pairRate = r / fromA.rate;
+        return `<div class="feed-row"><span>${esc(srcName)}</span><span class="mono" style="color:var(--green);font-weight:700;">1 ${esc(fromA.code)} = ${fmtNum(pairRate)} ${esc(toA.code)}</span></div>`;
+      }).join("");
+
+      renderPopular(fromA);
+      renderDirectory(fromA);
+    }
+
+    function attachCardTilt() {
+      document.querySelectorAll(".pop-card").forEach(card => {
+        card.addEventListener("mousemove", e => {
+          const r = card.getBoundingClientRect();
+          const x = e.clientX - r.left, y = e.clientY - r.top;
+          const rx = ((y / r.height) - 0.5) * -8;
+          const ry = ((x / r.width) - 0.5) * 8;
+          card.style.transform = `perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
+          card.style.setProperty("--mx", `${(x / r.width) * 100}%`);
+          card.style.setProperty("--my", `${(y / r.height) * 100}%`);
+        });
+        card.addEventListener("mouseleave", () => { card.style.transform = ""; });
+      });
+    }
+
+    function renderPopular(fromA) {
+      const items = state.popular.filter(c => c !== fromA.code).map(c => state.assets.get(c)).filter(Boolean);
+      document.querySelector("#popularGrid").innerHTML = items.map(a => {
+        const cross = a.rate / fromA.rate;
+        return `
+          <div class="pop-card" data-code="${esc(a.code)}">
+            <div class="pop-top"><span class="pop-code mono">${esc(a.code)}</span><span class="pop-cat">${esc(a.cat)}</span></div>
+            <div class="pop-val mono">${fmtNum(state.fromAmount * cross)}</div>
+            <div class="pop-name">${esc(a.name)}</div>
+          </div>
+        `;
+      }).join("");
+      attachCardTilt();
+    }
+
+    function renderDirectory(fromA) {
+      const q = state.searchQuery.trim().toLowerCase();
+      let list = [...state.assets.values()].filter(a => {
+        if (state.catFilter !== "all" && a.cat !== state.catFilter) return false;
+        if (q && !a.code.toLowerCase().includes(q) && !a.name.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      list.sort((a, b) => a.rank - b.rank || a.code.localeCompare(b.code));
+
+      const total = list.length;
+      const maxPage = Math.max(1, Math.ceil(total / state.pageSize));
+      if (state.page > maxPage) state.page = maxPage;
+      const start = (state.page - 1) * state.pageSize;
+      const slice = list.slice(start, start + state.pageSize);
+
+      document.querySelector("#dirBody").innerHTML = slice.map(a => {
+        const cross = a.rate / fromA.rate;
+        const chg = a.change24h === null
+          ? `<span class="muted">--</span>`
+          : `<span class="mono ${a.change24h >= 0 ? "pos" : "neg"}">${a.change24h >= 0 ? "+" : ""}${a.change24h.toFixed(2)}%</span>`;
+        return `
+          <tr data-code="${esc(a.code)}" class="${a.code === state.toCode ? "selected" : ""}">
+            <td class="mono" style="font-weight:700;">${esc(a.code)}</td>
+            <td>${esc(a.name)}</td>
+            <td><span style="text-transform:uppercase;font-size:.72rem;color:var(--mint);">${esc(a.cat)}</span></td>
+            <td class="mono">${fmtNum(cross)}</td>
+            <td class="mono" style="font-weight:700;color:var(--green);">${fmtNum(state.fromAmount * cross)} ${esc(a.code)}</td>
+            <td>${chg}</td>
+          </tr>
+        `;
+      }).join("");
+
+      document.querySelector("#pageInfo").textContent = total
+        ? `Showing ${start + 1}-${Math.min(start + state.pageSize, total)} of ${total.toLocaleString()} assets`
+        : "No matching currencies";
+      document.querySelector("#pageNum").textContent = `Page ${state.page} / ${maxPage}`;
+      document.querySelector("#prevPageBtn").disabled = state.page <= 1;
+      document.querySelector("#nextPageBtn").disabled = state.page >= maxPage;
+    }
+
+    function renderPickerList(listEl, searchVal, currentCode, side) {
+      const q = searchVal.trim().toLowerCase();
+      const all = [...state.assets.values()].sort((a, b) => a.rank - b.rank || a.code.localeCompare(b.code));
+      const matches = (q ? all.filter(a => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)) : all).slice(0, 120);
+      listEl.innerHTML = matches.map(a => `
+        <div class="picker-item ${a.code === currentCode ? "active" : ""}" data-side="${side}" data-code="${esc(a.code)}">
+          <span class="picker-item-code mono">${esc(a.code)}</span>
+          <span class="picker-item-name">${esc(a.name)}</span>
+          <span class="picker-item-cat">${esc(a.cat)}</span>
+        </div>
+      `).join("");
+    }
+
+    function openPicker(side) {
+      const menu = document.querySelector(side === "from" ? "#fromMenu" : "#toMenu");
+      const other = document.querySelector(side === "from" ? "#toMenu" : "#fromMenu");
+      other.classList.remove("open");
+      if (menu.classList.toggle("open")) {
+        const input = document.querySelector(side === "from" ? "#fromSearchInput" : "#toSearchInput");
+        const list = document.querySelector(side === "from" ? "#fromList" : "#toList");
+        input.value = "";
+        renderPickerList(list, "", side === "from" ? state.fromCode : state.toCode, side);
+        input.focus();
+      }
+    }
+
+    async function loadChart() {
+      const fromA = state.assets.get(state.fromCode);
+      const toA = state.assets.get(state.toCode);
+      if (!fromA || !toA) return;
+      let labels = [], values = [];
+      if (fromA.cat === "fiat" && toA.cat === "fiat" && fromA.code !== toA.code) {
+        try {
+          const end = new Date(), start = new Date(end.getTime() - 30 * 86400000);
+          const f = d => d.toISOString().slice(0, 10);
+          const r = await fetch(`https://api.frankfurter.dev/v1/${f(start)}..${f(end)}?base=${encodeURIComponent(fromA.code)}&symbols=${encodeURIComponent(toA.code)}`);
+          if (r.ok) {
+            const d = await r.json();
+            const entries = Object.entries(d.rates || {}).sort((a, b) => a[0].localeCompare(b[0]));
+            labels = entries.map(([k]) => k.slice(5));
+            values = entries.map(([, o]) => o[toA.code]).filter(Number.isFinite);
+          }
+        } catch (_) {}
+      }
+      if (!values.length) {
+        const cross = toA.rate / fromA.rate;
+        labels = ["T-24h", "T-18h", "T-12h", "T-6h", "Current"];
+        values = [cross, cross, cross, cross, cross];
+      }
+      const ctx = document.querySelector("#rateChart").getContext("2d");
+      if (chartInst) chartInst.destroy();
+      chartInst = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets: [{ data: values, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.10)", borderWidth: 2, fill: true, tension: 0.28, pointRadius: 2.5 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: "rgba(15,23,42,0.06)" }, ticks: { color: "#475569", maxTicksLimit: 6 } }, y: { grid: { color: "rgba(15,23,42,0.06)" }, ticks: { color: "#475569" } } } }
+      });
+    }
+
+    function observeReveals() {
+      const els = document.querySelectorAll(".reveal:not(.visible)");
+      if (!("IntersectionObserver" in window)) { els.forEach(el => el.classList.add("visible")); return; }
+      const obs = new IntersectionObserver(entries => {
+        let batch = 0;
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.transitionDelay = `${Math.min(batch * 70, 280)}ms`;
+            batch++;
+            entry.target.classList.add("visible");
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      els.forEach(el => obs.observe(el));
+    }
+
+    function scrambleText(el) {
+      if (el.dataset.scrambled) return;
+      el.dataset.scrambled = "1";
+      const target = el.textContent, chars = "0123456789ABCDEF#";
+      let frame = 0;
+      const iv = setInterval(() => {
+        el.textContent = target.split("").map((ch, idx) => ch === " " ? " " : (idx < frame / 2 ? target[idx] : chars[Math.floor(Math.random() * chars.length)])).join("");
+        frame++;
+        if (frame > target.length * 2 + 2) { el.textContent = target; clearInterval(iv); }
+      }, 22);
+    }
+
+    function navigateTo(page, opts = {}) {
+      if (!document.querySelector(`.page-view[data-page="${page}"]`)) page = "overview";
+      if (opts.cat) {
+        state.catFilter = opts.cat;
+        document.querySelectorAll(".filter").forEach(b => b.classList.toggle("active", b.dataset.cat === state.catFilter));
+        state.page = 1;
+        updateUI("from");
+      }
+      if (currentPage !== page) {
+        const curtain = document.querySelector("#pageCurtain");
+        if (curtain) { curtain.classList.remove("sweep"); void curtain.offsetWidth; curtain.classList.add("sweep"); }
+        document.querySelectorAll(".page-view").forEach(v => v.classList.toggle("active", v.dataset.page === page));
+        document.querySelectorAll(".navlinks a[data-page]").forEach(a => a.classList.toggle("active-tab", a.dataset.page === page));
+        currentPage = page;
+        try { history.replaceState(null, "", "#/" + page); } catch (_) {}
+        window.scrollTo({ top: 0, behavior: "instant" });
+        observeReveals();
+        if (page === "compare") loadChart();
+      }
+    }
+
+    function initVisuals() {
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const aura = document.querySelector("#cursorAura");
+      if (aura && !reduced) {
+        window.addEventListener("mousemove", e => { aura.style.left = e.clientX + "px"; aura.style.top = e.clientY + "px"; }, { passive: true });
+      }
+      window.addEventListener("scroll", () => {
+        const y = window.scrollY;
+        document.querySelector("#topbar").classList.toggle("scrolled", y > 24);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        document.querySelector("#scrollProgress").style.width = max > 0 ? `${(y / max) * 100}%` : "0%";
+      }, { passive: true });
+
+      if ("IntersectionObserver" in window && !reduced) {
+        const kObs = new IntersectionObserver(entries => {
+          entries.forEach(e => { if (e.isIntersecting) { scrambleText(e.target); kObs.unobserve(e.target); } });
+        }, { threshold: 0.2 });
+        document.querySelectorAll(".kicker").forEach(k => kObs.observe(k));
+      }
+
+      const ac = document.querySelector("#ambientCanvas");
+      const actx = ac.getContext("2d");
+      const hc = document.querySelector("#heroCanvas");
+      const hctx = hc.getContext("2d");
+      let aw = 0, ah = 0, hw = 0, hh = 0, mx = -999, my = -999;
+      const pts = Array.from({ length: 50 }, () => ({ x: Math.random(), y: Math.random(), vx: (Math.random() - 0.5) * 0.00035, vy: (Math.random() - 0.5) * 0.00035, r: 0.7 + Math.random() * 1.5 }));
+      const nodes = Array.from({ length: 42 }, () => ({ x: Math.random(), y: Math.random(), vx: (Math.random() - 0.5) * 0.00045, vy: (Math.random() - 0.5) * 0.00045 }));
+
+      hc.parentElement.addEventListener("mousemove", e => { const r = hc.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; }, { passive: true });
+      hc.parentElement.addEventListener("mouseleave", () => { mx = -999; my = -999; });
+
+      function resize() {
+        aw = ac.width = window.innerWidth; ah = ac.height = window.innerHeight;
+        const r = hc.getBoundingClientRect(); hw = hc.width = r.width || window.innerWidth; hh = hc.height = r.height || 480;
+      }
+      window.addEventListener("resize", resize); resize();
+
+      function frame() {
+        const tNow = performance.now() * 0.001;
+        actx.clearRect(0, 0, aw, ah);
+        pts.forEach(p => {
+          p.x = (p.x + p.vx + 1) % 1; p.y = (p.y + p.vy + 1) % 1;
+          actx.fillStyle = "rgba(148,163,184,0.36)";
+          actx.beginPath(); actx.arc(p.x * aw, p.y * ah, p.r, 0, Math.PI * 2); actx.fill();
+        });
+
+        hctx.clearRect(0, 0, hw, hh);
+        // Perspective Synth Grid Floor
+        const horizonY = hh * 0.56;
+        hctx.strokeStyle = "rgba(96,165,250,0.09)"; hctx.lineWidth = 1;
+        for (let g = -9; g <= 9; g++) {
+          hctx.beginPath(); hctx.moveTo(hw * 0.5 + g * 24, horizonY); hctx.lineTo(hw * 0.5 + g * 130, hh); hctx.stroke();
+        }
+        for (let r = 0; r < 8; r++) {
+          const p = ((r / 8) + (tNow * 0.16) % (1 / 8));
+          const y = horizonY + Math.pow(p, 2.2) * (hh - horizonY);
+          hctx.beginPath(); hctx.moveTo(0, y); hctx.lineTo(hw, y); hctx.stroke();
+        }
+
+        const beamX = hw * 0.74;
+        const grad = hctx.createLinearGradient(beamX - 130, 0, beamX + 130, hh);
+        grad.addColorStop(0, "rgba(96,165,250,0)"); grad.addColorStop(0.5, "rgba(96,165,250,0.18)"); grad.addColorStop(1, "rgba(167,139,250,0)");
+        hctx.fillStyle = grad; hctx.fillRect(beamX - 130, 0, 260, hh);
+
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          n.x = (n.x + n.vx + 1) % 1; n.y = (n.y + n.vy + 1) % 1;
+          const px = n.x * hw, py = n.y * hh;
+          for (let j = i + 1; j < nodes.length; j++) {
+            const m = nodes[j], qx = m.x * hw, qy = m.y * hh;
+            const d = Math.hypot(px - qx, py - qy);
+            if (d < 130) {
+              hctx.strokeStyle = `rgba(96,165,250,${(1 - d / 130) * 0.24})`;
+              hctx.beginPath(); hctx.moveTo(px, py); hctx.lineTo(qx, qy); hctx.stroke();
+            }
+          }
+          const md = Math.hypot(px - mx, py - my);
+          if (md < 160) {
+            hctx.strokeStyle = `rgba(251,146,60,${(1 - md / 160) * 0.45})`;
+            hctx.beginPath(); hctx.moveTo(px, py); hctx.lineTo(mx, my); hctx.stroke();
+          }
+          hctx.fillStyle = "rgba(167,139,250,0.68)";
+          hctx.beginPath(); hctx.arc(px, py, 1.9, 0, Math.PI * 2); hctx.fill();
+        }
+        if (!reduced) requestAnimationFrame(frame);
+      }
+      frame();
+    }
+
+    function resolveAdvisorQuery(query) {
+      const q = query.trim(), lower = q.toLowerCase();
+      const convMatch = q.match(/([0-9]*\.?[0-9]+)?\s*([a-z0-9]{2,8})\s+(?:to|in|into|->)\s+([a-z0-9]{2,8})/i);
+      if (convMatch) {
+        const amt = convMatch[1] ? Number(convMatch[1]) : 1;
+        const fa = state.assets.get(convMatch[2].toUpperCase()), ta = state.assets.get(convMatch[3].toUpperCase());
+        if (fa && ta) {
+          const res = amt * (ta.rate / fa.rate);
+          return {
+            text: `${fmtNum(amt)} ${fa.code} (${fa.name}) equals ${fmtNum(res)} ${ta.code} (${ta.name}).\nRate: 1 ${fa.code} = ${fmtNum(ta.rate / fa.rate)} ${ta.code}`,
+            chips: [{ label: `Load ${fa.code} to ${ta.code}`, action: () => { state.fromCode = fa.code; state.toCode = ta.code; document.querySelector("#fromAmountInput").value = amt; updateUI("from"); navigateTo("overview"); } }]
+          };
+        }
+      }
+      if (lower.includes("compare") || lower.includes(" vs ")) {
+        const tokens = q.toUpperCase().split(/[^A-Z0-9]+/).filter(t => state.assets.has(t));
+        if (tokens.length >= 2) {
+          const a = state.assets.get(tokens[0]), b = state.assets.get(tokens[1]);
+          return {
+            text: `${a.code} (${a.name}) vs ${b.code} (${b.name}):\n1 USD = ${fmtNum(a.rate)} ${a.code} ($${fmtNum(1 / a.rate)} per unit)\n1 USD = ${fmtNum(b.rate)} ${b.code} ($${fmtNum(1 / b.rate)} per unit)\nCross-rate: 1 ${a.code} = ${fmtNum(b.rate / a.rate)} ${b.code}`,
+            chips: [{ label: "Open Chart", action: () => { state.fromCode = a.code; state.toCode = b.code; updateUI("from"); navigateTo("compare"); } }]
+          };
+        }
+      }
+      return {
+        text: "Specify a pair and amount—for example, '500 USD to INR', '10000 INR to BTC', or 'Compare BTC vs ETH'.",
+        chips: [{ label: "Open Directory", action: () => navigateTo("directory") }]
+      };
+    }
+
+    function appendAdvisorMsg(text, isUser = false, chips = []) {
+      const box = document.querySelector("#messages");
+      const div = document.createElement("div");
+      div.className = "message" + (isUser ? " user" : "");
+      div.textContent = text;
+      if (chips.length) {
+        const row = document.createElement("div");
+        row.className = "msg-chips";
+        chips.forEach(c => {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "msg-chip"; b.textContent = c.label;
+          b.addEventListener("click", c.action);
+          row.appendChild(b);
+        });
+        div.appendChild(row);
+      }
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    document.addEventListener("click", e => {
+      const tItem = e.target.closest(".ticker-item[data-tpair]");
+      if (tItem) {
+        const [f, t] = tItem.dataset.tpair.split(":");
+        state.fromCode = f; state.toCode = t; updateUI("from"); navigateTo("overview"); return;
+      }
+      const navTarget = e.target.closest("[data-page]");
+      if (navTarget) {
+        if (navTarget.tagName === "A") e.preventDefault();
+        navigateTo(navTarget.dataset.page, { cat: navTarget.dataset.cat });
+        return;
+      }
+      const item = e.target.closest(".picker-item");
+      if (item) {
+        if (item.dataset.side === "from") state.fromCode = item.dataset.code;
+        else state.toCode = item.dataset.code;
+        document.querySelector("#fromMenu").classList.remove("open");
+        document.querySelector("#toMenu").classList.remove("open");
+        updateUI("from"); return;
+      }
+      if (!e.target.closest(".picker-menu")) {
+        document.querySelector("#fromMenu").classList.remove("open");
+        document.querySelector("#toMenu").classList.remove("open");
+      }
+    });
+
+    document.querySelector("#fromAmountInput").addEventListener("input", () => { document.querySelectorAll(".chip[data-amt]").forEach(c => c.classList.remove("active")); updateUI("from"); });
+    document.querySelector("#toAmountInput").addEventListener("input", () => { document.querySelectorAll(".chip[data-amt]").forEach(c => c.classList.remove("active")); updateUI("to"); });
+    document.querySelector("#fromPickerBtn").addEventListener("click", e => { e.stopPropagation(); openPicker("from"); });
+    document.querySelector("#toPickerBtn").addEventListener("click", e => { e.stopPropagation(); openPicker("to"); });
+    document.querySelector("#fromSearchInput").addEventListener("input", e => renderPickerList(document.querySelector("#fromList"), e.target.value, state.fromCode, "from"));
+    document.querySelector("#toSearchInput").addEventListener("input", e => renderPickerList(document.querySelector("#toList"), e.target.value, state.toCode, "to"));
+    document.querySelector("#swapBtn").addEventListener("click", () => { const t = state.fromCode; state.fromCode = state.toCode; state.toCode = t; updateUI("from"); });
+
+    document.querySelectorAll(".chip[data-pair]").forEach(b => b.addEventListener("click", () => { const [f, t] = b.dataset.pair.split(":"); state.fromCode = f; state.toCode = t; updateUI("from"); }));
+    document.querySelectorAll(".chip[data-amt]").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll(".chip[data-amt]").forEach(c => c.classList.remove("active"));
+      b.classList.add("active"); document.querySelector("#fromAmountInput").value = b.dataset.amt; updateUI("from");
+    }));
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(`${document.querySelector("#fromAmountInput").value} ${state.fromCode} = ${document.querySelector("#toAmountInput").value} ${state.toCode}`);
+        const b = document.querySelector("#copyBtn"); b.textContent = "Copied"; setTimeout(() => { b.textContent = "Copy Result"; }, 1400);
+      } catch (_) {}
+    });
+    document.querySelector("#popularGrid").addEventListener("click", e => { const c = e.target.closest(".pop-card[data-code]"); if (c) { state.toCode = c.dataset.code; updateUI("from"); } });
+    document.querySelectorAll(".filter[data-cat]").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll(".filter[data-cat]").forEach(x => x.classList.remove("active"));
+      b.classList.add("active"); state.catFilter = b.dataset.cat; state.page = 1; updateUI("from");
+    }));
+    document.querySelector("#dirSearch").addEventListener("input", e => { state.searchQuery = e.target.value; state.page = 1; updateUI("from"); });
+    document.querySelector("#dirBody").addEventListener("click", e => { const r = e.target.closest("tr[data-code]"); if (r) { state.toCode = r.dataset.code; updateUI("from"); navigateTo("overview"); } });
+    document.querySelector("#prevPageBtn").addEventListener("click", () => { if (state.page > 1) { state.page--; updateUI("from"); } });
+    document.querySelector("#nextPageBtn").addEventListener("click", () => { state.page++; updateUI("from"); });
+    document.querySelector("#refreshBtn").addEventListener("click", () => fetchLiveFeeds());
+    document.querySelector("#refreshBtn2").addEventListener("click", () => fetchLiveFeeds());
+    document.querySelector("#loadMoreCryptoBtn").addEventListener("click", async () => {
+      const btn = document.querySelector("#loadMoreCryptoBtn");
+      btn.disabled = true; btn.textContent = "Loading...";
+      try {
+        const starts = Array.from({ length: 10 }, (_, i) => (state.cryptoPagesLoaded + i) * 100);
+        const res = await Promise.allSettled(starts.map(s => fetch(`https://api.coinlore.net/api/tickers/?start=${s}&limit=100`).then(r => r.json())));
+        res.forEach(x => {
+          if (x.status === "fulfilled" && Array.isArray(x.value?.data)) {
+            x.value.data.forEach(item => {
+              const p = Number(item.price_usd);
+              if (p > 0 && item.symbol) upsertQuote(item.symbol, item.name, "crypto", 1 / p, "CoinLore", Number(item.percent_change_24h), 200 + Number(item.rank || 9999));
+            });
+          }
+        });
+        state.cryptoPagesLoaded += 10; updateUI("from");
+      } catch (_) {}
+      btn.disabled = false; btn.textContent = "Load +1,000 Extended Crypto";
+    });
+
+    const chat = document.querySelector("#chat"), chatToggle = document.querySelector("#chatToggle");
+    chatToggle.addEventListener("click", () => {
+      const open = chat.classList.toggle("open");
+      chat.setAttribute("aria-hidden", String(!open)); chatToggle.setAttribute("aria-expanded", String(open));
+      if (open) document.querySelector("#chatInput").focus();
+    });
+    document.querySelector("#chatClose").addEventListener("click", () => { chat.classList.remove("open"); chat.setAttribute("aria-hidden", "true"); });
+    document.querySelector("#chatForm").addEventListener("submit", e => {
+      e.preventDefault(); const inp = document.querySelector("#chatInput"), q = inp.value.trim(); if (!q) return;
+      inp.value = ""; appendAdvisorMsg(q, true); const ans = resolveAdvisorQuery(q); appendAdvisorMsg(ans.text, false, ans.chips);
+    });
+    document.querySelectorAll(".prompt").forEach(p => p.addEventListener("click", () => {
+      appendAdvisorMsg(p.textContent, true); const ans = resolveAdvisorQuery(p.textContent); appendAdvisorMsg(ans.text, false, ans.chips);
+    }));
+
+    initBaseline();
+    renderTicker();
+    renderFeeds();
+    updateUI("from");
+    observeReveals();
+    initVisuals();
+    fetchLiveFeeds();
+  </script>
+</body>
+</html>
