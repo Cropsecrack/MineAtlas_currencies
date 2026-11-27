@@ -1302,5 +1302,257 @@
     initVisuals();
     fetchLiveFeeds();
   </script>
+
+  <!-- Non-Intrusive Interactive Guided Tour Overlay -->
+  <style>
+    .ma-tour-launch{
+      position:fixed;left:22px;bottom:22px;z-index:85;
+      display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;
+      border:1px solid rgba(37,99,235,.35);background:#ffffff;color:#0f172a;
+      font-weight:750;font-size:.82rem;cursor:pointer;
+      box-shadow:0 12px 30px rgba(15,23,42,.16);
+      transition:transform .25s ease,border-color .2s ease,box-shadow .25s ease;
+    }
+    .ma-tour-launch:hover{transform:translateY(-2px);border-color:#2563eb;box-shadow:0 16px 36px rgba(37,99,235,.22)}
+    .ma-tour-dot{width:8px;height:8px;border-radius:50%;background:#2563eb;box-shadow:0 0 8px rgba(37,99,235,.7)}
+
+    .ma-tour-card{
+      position:fixed;left:22px;bottom:78px;z-index:86;width:min(390px,calc(100vw - 44px));
+      background:rgba(255,255,255,.97);color:#0f172a;border:1px solid rgba(37,99,235,.35);
+      border-radius:18px;padding:18px;box-shadow:0 24px 60px rgba(15,23,42,.22);
+      backdrop-filter:blur(12px);display:none;flex-direction:column;gap:10px;
+    }
+    .ma-tour-card.open{display:flex;animation:popMenu .25s ease both}
+    .ma-tour-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .ma-tour-step{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#7c3aed}
+    .ma-tour-close{border:0;background:none;color:#64748b;font-size:1.25rem;cursor:pointer;line-height:1}
+    .ma-tour-title{margin:0;font-size:1.05rem;font-weight:800;color:#0f172a}
+    .ma-tour-body{margin:0;font-size:.85rem;line-height:1.5;color:#334155}
+    .ma-tour-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+    .ma-tour-btn{
+      padding:7px 12px;border-radius:999px;border:1px solid rgba(15,23,42,.12);
+      background:#f8fafc;color:#0f172a;font-size:.77rem;font-weight:700;cursor:pointer;
+    }
+    .ma-tour-btn:hover{border-color:#2563eb;color:#2563eb}
+    .ma-tour-btn.primary{background:#2563eb;color:#ffffff;border-color:#2563eb}
+    .ma-tour-btn.primary:hover{background:#1d4ed8;color:#ffffff}
+
+    .ma-tour-spotlight{
+      outline:3px solid #2563eb !important;
+      outline-offset:4px;
+      box-shadow:0 0 0 8px rgba(37,99,235,.18) !important;
+      transition:outline .2s ease, box-shadow .2s ease;
+    }
+  </style>
+
+  <button type="button" class="ma-tour-launch" id="maTourLaunch" aria-expanded="false">
+    <span class="ma-tour-dot"></span>
+    <span>Guided Tour</span>
+  </button>
+
+  <aside class="ma-tour-card" id="maTourCard" aria-label="Interactive Website Tour">
+    <div class="ma-tour-head">
+      <span class="ma-tour-step" id="maTourStepLabel">Step 1 of 8</span>
+      <button type="button" class="ma-tour-close" id="maTourClose" aria-label="Close tour">x</button>
+    </div>
+    <h3 class="ma-tour-title" id="maTourTitle">MineAtlas Currencies</h3>
+    <p class="ma-tour-body" id="maTourBody">Click Next or Random Feature to watch the tour click real controls on the site and explain each feature.</p>
+    <div class="ma-tour-actions">
+      <button type="button" class="ma-tour-btn primary" id="maTourNext">Next Step</button>
+      <button type="button" class="ma-tour-btn" id="maTourRandom">Random Feature</button>
+      <button type="button" class="ma-tour-btn" id="maTourAuto">Auto-Play: OFF</button>
+      <button type="button" class="ma-tour-btn" id="maTourVoice">Voice: ON</button>
+    </div>
+  </aside>
+
+  <script>
+    (function initMineAtlasTour(){
+      const TOUR_STEPS = [
+        {
+          page: "overview",
+          selector: "#fromAmountInput",
+          title: "Two-Way Amount Input",
+          text: "Type any number in the From Amount box or the Converted To box. Both sides recalculate instantly without needing to switch modes.",
+          act: () => {
+            const el = document.querySelector("#fromAmountInput");
+            if (el) { el.value = "250"; el.dispatchEvent(new Event("input", { bubbles: true })); }
+          }
+        },
+        {
+          page: "overview",
+          selector: "#toPickerBtn",
+          title: "Searchable Currency Pill (1,200+ Assets)",
+          text: "Clicking either currency pill opens a fast search menu covering 160+ fiat currencies like Indian Rupee, precious metals, and 1,000+ cryptocurrencies.",
+          act: () => {
+            const btn = document.querySelector("#toPickerBtn");
+            if (btn) btn.click();
+          }
+        },
+        {
+          page: "overview",
+          selector: "#swapBtn",
+          title: "Instant Pair Swap",
+          text: "Click the swap button to reverse your active conversion direction immediately—for example, switching from USD to INR into INR to USD.",
+          act: () => {
+            document.querySelector("#fromMenu")?.classList.remove("open");
+            document.querySelector("#toMenu")?.classList.remove("open");
+            document.querySelector("#swapBtn")?.click();
+          }
+        },
+        {
+          page: "overview",
+          selector: ".quick-bar",
+          title: "One-Click Pairs & Amount Presets",
+          text: "Use the quick pair and amount chips to jump straight to popular conversions such as USD to INR, INR to BTC, or 1,000 units.",
+          act: () => {
+            document.querySelector('.chip[data-pair="USD:INR"]')?.click();
+            document.querySelector('.chip[data-amt="1000"]')?.click();
+          }
+        },
+        {
+          page: "overview",
+          selector: "#popularGrid",
+          title: "Popular Benchmarks Grid",
+          text: "This grid displays your active amount across 15 major currencies and cryptocurrencies simultaneously. Clicking any card sets it as your target currency.",
+          act: () => {
+            document.querySelector('.pop-card[data-code="BTC"]')?.click();
+          }
+        },
+        {
+          page: "directory",
+          selector: "#dirSearch",
+          title: "Complete 1,200+ Asset Directory",
+          text: "The Directory tab lets you filter by Fiat, Crypto, or Metals and search all 1,200+ assets. Clicking any row loads it directly into the converter.",
+          act: () => {
+            document.querySelector('.filter[data-cat="fiat"]')?.click();
+          }
+        },
+        {
+          page: "compare",
+          selector: ".split-2",
+          title: "30-Day Trend Chart & Source Provenance",
+          text: "Compare and Chart displays a 30-day central-bank exchange-rate chart alongside individual quotes from each responding market feed.",
+          act: () => {
+            document.querySelector('.chip[data-pair="USD:INR"]')?.click();
+          }
+        },
+        {
+          page: "feeds",
+          selector: "#feedList",
+          title: "Five Live Market Aggregators",
+          text: "Live Sources monitors ExchangeRate-API, Frankfurter, fawazahmed0 CDN, CoinPaprika, and CoinLore, and lets you load 1,000+ extended crypto tickers.",
+          act: () => {}
+        },
+        {
+          page: "overview",
+          selector: "#chat",
+          title: "Built-In MineAtlas Currencies Advisor",
+          text: "Open the AI Advisor in the bottom-right corner to run natural-language queries like '500 USD to INR' or 'Compare BTC vs ETH' with one-click actions.",
+          act: () => {
+            const chat = document.querySelector("#chat");
+            if (chat && !chat.classList.contains("open")) document.querySelector("#chatToggle")?.click();
+            document.querySelector(".prompt")?.click();
+          }
+        }
+      ];
+
+      let idx = -1;
+      let autoTimer = null;
+      let voiceOn = true;
+      let lastSpot = null;
+
+      const launch = document.querySelector("#maTourLaunch");
+      const card = document.querySelector("#maTourCard");
+      const stepLbl = document.querySelector("#maTourStepLabel");
+      const titleEl = document.querySelector("#maTourTitle");
+      const bodyEl = document.querySelector("#maTourBody");
+      const autoBtn = document.querySelector("#maTourAuto");
+      const voiceBtn = document.querySelector("#maTourVoice");
+
+      function speak(text) {
+        if (!voiceOn || !("speechSynthesis" in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 1.02;
+          u.pitch = 1.0;
+          window.speechSynthesis.speak(u);
+        } catch (_) {}
+      }
+
+      function clearSpotlight() {
+        if (lastSpot) { lastSpot.classList.remove("ma-tour-spotlight"); lastSpot = null; }
+      }
+
+      function runStep(i) {
+        idx = (i + TOUR_STEPS.length) % TOUR_STEPS.length;
+        const step = TOUR_STEPS[idx];
+        clearSpotlight();
+
+        const navLink = document.querySelector(`.navlinks a[data-page="${step.page}"]`);
+        if (navLink) navLink.click();
+
+        setTimeout(() => {
+          try { step.act(); } catch (_) {}
+          const target = document.querySelector(step.selector);
+          if (target) {
+            target.classList.add("ma-tour-spotlight");
+            lastSpot = target;
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          stepLbl.textContent = `Step ${idx + 1} of ${TOUR_STEPS.length}`;
+          titleEl.textContent = step.title;
+          bodyEl.textContent = step.text;
+          speak(`${step.title}. ${step.text}`);
+        }, 160);
+      }
+
+      launch.addEventListener("click", () => {
+        const open = card.classList.toggle("open");
+        launch.setAttribute("aria-expanded", String(open));
+        if (open && idx === -1) runStep(0);
+        if (!open) {
+          clearSpotlight();
+          if (autoTimer) { clearInterval(autoTimer); autoTimer = null; autoBtn.textContent = "Auto-Play: OFF"; }
+          try { window.speechSynthesis?.cancel(); } catch (_) {}
+        }
+      });
+
+      document.querySelector("#maTourClose").addEventListener("click", () => {
+        card.classList.remove("open");
+        launch.setAttribute("aria-expanded", "false");
+        clearSpotlight();
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; autoBtn.textContent = "Auto-Play: OFF"; }
+        try { window.speechSynthesis?.cancel(); } catch (_) {}
+      });
+
+      document.querySelector("#maTourNext").addEventListener("click", () => runStep(idx + 1));
+
+      document.querySelector("#maTourRandom").addEventListener("click", () => {
+        let r = Math.floor(Math.random() * TOUR_STEPS.length);
+        if (r === idx && TOUR_STEPS.length > 1) r = (r + 1) % TOUR_STEPS.length;
+        runStep(r);
+      });
+
+      autoBtn.addEventListener("click", () => {
+        if (autoTimer) {
+          clearInterval(autoTimer);
+          autoTimer = null;
+          autoBtn.textContent = "Auto-Play: OFF";
+        } else {
+          if (idx === -1) runStep(0);
+          autoBtn.textContent = "Auto-Play: ON";
+          autoTimer = setInterval(() => runStep(idx + 1), 6500);
+        }
+      });
+
+      voiceBtn.addEventListener("click", () => {
+        voiceOn = !voiceOn;
+        voiceBtn.textContent = voiceOn ? "Voice: ON" : "Voice: OFF";
+        if (!voiceOn) try { window.speechSynthesis?.cancel(); } catch (_) {}
+      });
+    })();
+  </script>
+
 </body>
 </html>
