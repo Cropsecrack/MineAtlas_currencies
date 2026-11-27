@@ -1,0 +1,15 @@
+<div class="rate-widget" id="erapi-widget" style="font-family:sans-serif;padding:16px;border:1px solid #e2e8f0;border-radius:12px;max-width:420px;background:#fff;color:#0f172a;">
+  <h3 style="margin:0 0 6px;">ExchangeRate-API</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:#475569;">Open-access foreign exchange rates for 160+ ISO fiat currencies.</p>
+  <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-size:14px;">Visit exchangerate-api.com</a>
+  <pre id="erapi-out" style="margin:12px 0 0;padding:10px;background:#f8fafc;border-radius:8px;font-size:13px;">Loading live USD rates...</pre>
+</div>
+<script>
+  fetch("https://open.er-api.com/v6/latest/USD")
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById("erapi-out").textContent =
+        `1 USD = ${d.rates.INR.toFixed(2)} INR | ${d.rates.EUR.toFixed(4)} EUR | ${d.rates.GBP.toFixed(4)} GBP`;
+    })
+    .catch(() => { document.getElementById("erapi-out").textContent = "Unable to load ExchangeRate-API."; });
+</script>
